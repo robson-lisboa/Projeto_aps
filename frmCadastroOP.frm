@@ -47,6 +47,9 @@ Private cboStatus As MSForms.ComboBox
 Private btnSalvar As MSForms.CommandButton
 Private btnCancelar As MSForms.CommandButton
 
+Private m_btnSalvarEvents As clsButtonEvents
+Private m_btnCancelarEvents As clsButtonEvents
+
 '=== PROPRIEDADES VISUAIS CORPORATIVAS =========================================
 Private Const COR_FUNDO As Long = 14211288
 Private Const COR_HEADER As Long = 3355443
@@ -153,8 +156,14 @@ Private Sub UserForm_Initialize()
         .ForeColor = COR_TEXTO_CLARO
     End With
     
+    Set m_btnSalvarEvents = New clsButtonEvents
+    Set m_btnSalvarEvents.Button = btnSalvar
+    
+    Set m_btnCancelarEvents = New clsButtonEvents
+    Set m_btnCancelarEvents.Button = btnCancelar
+    
     '--- Preenche combos -------------------------------------------------------
-    With cboStatus
+    With Me.Controls("cboStatus")
         .AddItem "Planejada"
         .AddItem "Em Andamento"
         .AddItem "Concluído"
@@ -190,56 +199,56 @@ Private Sub btnSalvar_Click()
     Dim status As String
     
     '--- Validação de campos obrigatórios --------------------------------------
-    idOP = Trim(Me.txtID_OP.Value)
-    produto = Trim(Me.txtProduto.Value)
-    equipamento = Trim(Me.cboEquipamento.Value)
-    status = Trim(Me.cboStatus.Value)
+    idOP = Trim(Me.Controls("txtID_OP").Value)
+    produto = Trim(Me.Controls("txtProduto").Value)
+    equipamento = Trim(Me.Controls("cboEquipamento").Value)
+    status = Trim(Me.Controls("cboStatus").Value)
     
     If idOP = "" Then
         MsgBox "Informe o ID da OP.", vbExclamation, "Validação"
-        Me.txtID_OP.SetFocus
+        Me.Controls("txtID_OP").SetFocus
         Exit Sub
     End If
     
     If produto = "" Then
         MsgBox "Informe o Produto.", vbExclamation, "Validação"
-        Me.txtProduto.SetFocus
+        Me.Controls("txtProduto").SetFocus
         Exit Sub
     End If
     
     If equipamento = "" Then
         MsgBox "Selecione o Equipamento.", vbExclamation, "Validação"
-        Me.cboEquipamento.SetFocus
+        Me.Controls("cboEquipamento").SetFocus
         Exit Sub
     End If
     
     '--- Converte valores numéricos e datas -------------------------------------
-    If Not IsNumeric(Me.txtQuantidade.Value) Or CLng(Me.txtQuantidade.Value) <= 0 Then
+    If Not IsNumeric(Me.Controls("txtQuantidade").Value) Or CLng(Me.Controls("txtQuantidade").Value) <= 0 Then
         MsgBox "Informe uma Quantidade válida maior que zero.", vbExclamation, "Validação"
-        Me.txtQuantidade.SetFocus
+        Me.Controls("txtQuantidade").SetFocus
         Exit Sub
     End If
     
-    quantidade = CLng(Me.txtQuantidade.Value)
+    quantidade = CLng(Me.Controls("txtQuantidade").Value)
     
-    If Not IsDate(Me.txtData_Inicio.Value) Then
+    If Not IsDate(Me.Controls("txtData_Inicio").Value) Then
         MsgBox "Informe uma Data de Início válida.", vbExclamation, "Validação"
-        Me.txtData_Inicio.SetFocus
+        Me.Controls("txtData_Inicio").SetFocus
         Exit Sub
     End If
     
-    If Not IsDate(Me.txtData_Fim.Value) Then
+    If Not IsDate(Me.Controls("txtData_Fim").Value) Then
         MsgBox "Informe uma Data de Fim válida.", vbExclamation, "Validação"
-        Me.txtData_Fim.SetFocus
+        Me.Controls("txtData_Fim").SetFocus
         Exit Sub
     End If
     
-    dataInicio = CDate(Me.txtData_Inicio.Value)
-    dataFim = CDate(Me.txtData_Fim.Value)
+    dataInicio = CDate(Me.Controls("txtData_Inicio").Value)
+    dataFim = CDate(Me.Controls("txtData_Fim").Value)
     
     If dataFim < dataInicio Then
         MsgBox "A Data de Fim não pode ser anterior à Data de Início.", vbExclamation, "Validação"
-        Me.txtData_Fim.SetFocus
+        Me.Controls("txtData_Fim").SetFocus
         Exit Sub
     End If
     
@@ -249,7 +258,7 @@ Private Sub btnSalvar_Click()
     '--- Valida duplicidade de ID_OP --------------------------------------------
     If ID_OPExiste(idOP) Then
         MsgBox "Já existe uma OP cadastrada com o ID informado.", vbExclamation, "Validação"
-        Me.txtID_OP.SetFocus
+        Me.Controls("txtID_OP").SetFocus
         Exit Sub
     End If
     
@@ -275,6 +284,14 @@ End Sub
 Private Sub btnCancelar_Click()
     On Error Resume Next
     Unload Me
+End Sub
+
+Private Sub m_btnSalvarEvents_Clicked()
+    btnSalvar_Click
+End Sub
+
+Private Sub m_btnCancelarEvents_Clicked()
+    btnCancelar_Click
 End Sub
 
 '================================================================================
@@ -308,13 +325,13 @@ Private Sub CarregarEquipamentos()
     
     totalLinhas = UBound(dados, 1)
     
-    Me.cboEquipamento.Clear
+    Me.Controls("cboEquipamento").Clear
     
     For i = 2 To totalLinhas
         Dim nomeEq As String
         nomeEq = CStr(dados(i, 2))
         If Trim(nomeEq) <> "" Then
-            Me.cboEquipamento.AddItem nomeEq
+            Me.Controls("cboEquipamento").AddItem nomeEq
         End If
     Next i
     

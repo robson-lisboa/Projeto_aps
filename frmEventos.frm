@@ -46,6 +46,9 @@ Private txtMotivo As MSForms.TextBox
 Private btnSalvar As MSForms.CommandButton
 Private btnCancelar As MSForms.CommandButton
 
+Private m_btnSalvarEvents As clsButtonEvents
+Private m_btnCancelarEvents As clsButtonEvents
+
 '=== PROPRIEDADES VISUAIS CORPORATIVAS =========================================
 Private Const COR_FUNDO As Long = 14211288
 Private Const COR_HEADER As Long = 3355443
@@ -117,7 +120,7 @@ Private Sub UserForm_Initialize()
     posY = posY + 36
     CriaRotulo "lblMotivo", "Motivo:", 12, posY
     Set txtMotivo = CriaCampoTexto("txtMotivo", 120, posY)
-    txtMotivo.Width = 340
+    Me.Controls("txtMotivo").Width = 340
     
     '--- Botões de ação --------------------------------------------------------
     posY = posY + 50
@@ -148,8 +151,14 @@ Private Sub UserForm_Initialize()
         .ForeColor = COR_TEXTO_CLARO
     End With
     
+    Set m_btnSalvarEvents = New clsButtonEvents
+    Set m_btnSalvarEvents.Button = btnSalvar
+    
+    Set m_btnCancelarEvents = New clsButtonEvents
+    Set m_btnCancelarEvents.Button = btnCancelar
+    
     '--- Preenche combos -------------------------------------------------------
-    With cboTipo
+    With Me.Controls("cboTipo")
         .AddItem "Manutenção"
         .AddItem "Parada"
         .AddItem "Refeição"
@@ -184,61 +193,61 @@ Private Sub btnSalvar_Click()
     Dim motivo As String
     
     '--- Validação de campos obrigatórios --------------------------------------
-    idEvento = Trim(Me.txtID_Evento.Value)
-    tipo = Trim(Me.cboTipo.Value)
-    equipamento = Trim(Me.cboEquipamento.Value)
-    motivo = Trim(Me.txtMotivo.Value)
+    idEvento = Trim(Me.Controls("txtID_Evento").Value)
+    tipo = Trim(Me.Controls("cboTipo").Value)
+    equipamento = Trim(Me.Controls("cboEquipamento").Value)
+    motivo = Trim(Me.Controls("txtMotivo").Value)
     
     If idEvento = "" Then
         MsgBox "Informe o ID do Evento.", vbExclamation, "Validação"
-        Me.txtID_Evento.SetFocus
+        Me.Controls("txtID_Evento").SetFocus
         Exit Sub
     End If
     
     If tipo = "" Then
         MsgBox "Selecione o Tipo do evento.", vbExclamation, "Validação"
-        Me.cboTipo.SetFocus
+        Me.Controls("cboTipo").SetFocus
         Exit Sub
     End If
     
     If equipamento = "" Then
         MsgBox "Selecione o Equipamento.", vbExclamation, "Validação"
-        Me.cboEquipamento.SetFocus
+        Me.Controls("cboEquipamento").SetFocus
         Exit Sub
     End If
     
     If motivo = "" Then
         MsgBox "Informe o Motivo do evento.", vbExclamation, "Validação"
-        Me.txtMotivo.SetFocus
+        Me.Controls("txtMotivo").SetFocus
         Exit Sub
     End If
     
     '--- Converte datas --------------------------------------------------------
-    If Not IsDate(Me.txtInicio.Value) Then
+    If Not IsDate(Me.Controls("txtInicio").Value) Then
         MsgBox "Informe uma data/hora de Início válida.", vbExclamation, "Validação"
-        Me.txtInicio.SetFocus
+        Me.Controls("txtInicio").SetFocus
         Exit Sub
     End If
     
-    If Not IsDate(Me.txtFim.Value) Then
+    If Not IsDate(Me.Controls("txtFim").Value) Then
         MsgBox "Informe uma data/hora de Fim válida.", vbExclamation, "Validação"
-        Me.txtFim.SetFocus
+        Me.Controls("txtFim").SetFocus
         Exit Sub
     End If
     
-    inicio = CDate(Me.txtInicio.Value)
-    fim = CDate(Me.txtFim.Value)
+    inicio = CDate(Me.Controls("txtInicio").Value)
+    fim = CDate(Me.Controls("txtFim").Value)
     
     If fim < inicio Then
         MsgBox "A Data/Hora de Fim não pode ser anterior à de Início.", vbExclamation, "Validação"
-        Me.txtFim.SetFocus
+        Me.Controls("txtFim").SetFocus
         Exit Sub
     End If
     
     '--- Persiste na TabelaEventos ---------------------------------------------
     If ID_EventoExiste(idEvento) Then
         MsgBox "Já existe um evento cadastrado com o ID informado.", vbExclamation, "Validação"
-        Me.txtID_Evento.SetFocus
+        Me.Controls("txtID_Evento").SetFocus
         Exit Sub
     End If
     
@@ -263,6 +272,14 @@ End Sub
 Private Sub btnCancelar_Click()
     On Error Resume Next
     Unload Me
+End Sub
+
+Private Sub m_btnSalvarEvents_Clicked()
+    btnSalvar_Click
+End Sub
+
+Private Sub m_btnCancelarEvents_Clicked()
+    btnCancelar_Click
 End Sub
 
 '================================================================================
@@ -345,13 +362,13 @@ Private Sub CarregarEquipamentos()
     
     totalLinhas = UBound(dados, 1)
     
-    Me.cboEquipamento.Clear
+    Me.Controls("cboEquipamento").Clear
     
     For i = 2 To totalLinhas
         Dim nomeEq As String
         nomeEq = CStr(dados(i, 2))
         If Trim(nomeEq) <> "" Then
-            Me.cboEquipamento.AddItem nomeEq
+            Me.Controls("cboEquipamento").AddItem nomeEq
         End If
     Next i
     

@@ -36,12 +36,19 @@ Attribute VB_Name = "frmPrincipal"
 Option Explicit
 
 '=== CONTROLES DO FORMULÁRIO ===================================================
-Private WithEvents btnDashboard As MSForms.CommandButton
-Private WithEvents btnTimeline As MSForms.CommandButton
-Private WithEvents btnCards As MSForms.CommandButton
-Private WithEvents btnProducao As MSForms.CommandButton
-Private WithEvents btnEventos As MSForms.CommandButton
-Private WithEvents btnConfig As MSForms.CommandButton
+Private btnDashboard As MSForms.CommandButton
+Private btnTimeline As MSForms.CommandButton
+Private btnCards As MSForms.CommandButton
+Private btnProducao As MSForms.CommandButton
+Private btnEventos As MSForms.CommandButton
+Private btnConfig As MSForms.CommandButton
+
+Private m_btnDashboardEvents As clsButtonEvents
+Private m_btnTimelineEvents As clsButtonEvents
+Private m_btnCardsEvents As clsButtonEvents
+Private m_btnProducaoEvents As clsButtonEvents
+Private m_btnEventosEvents As clsButtonEvents
+Private m_btnConfigEvents As clsButtonEvents
 
 Private fraMenu As MSForms.Frame
 Private fraConteudo As MSForms.Frame
@@ -139,6 +146,24 @@ Private Sub UserForm_Initialize()
         
         posY = posY + ALTURA_BOTAO + ESPACAMENTO
     Next i
+    
+    Set m_btnDashboardEvents = New clsButtonEvents
+    Set m_btnDashboardEvents.Button = btnDashboard
+    
+    Set m_btnTimelineEvents = New clsButtonEvents
+    Set m_btnTimelineEvents.Button = btnTimeline
+    
+    Set m_btnCardsEvents = New clsButtonEvents
+    Set m_btnCardsEvents.Button = btnCards
+    
+    Set m_btnProducaoEvents = New clsButtonEvents
+    Set m_btnProducaoEvents.Button = btnProducao
+    
+    Set m_btnEventosEvents = New clsButtonEvents
+    Set m_btnEventosEvents.Button = btnEventos
+    
+    Set m_btnConfigEvents = New clsButtonEvents
+    Set m_btnConfigEvents.Button = btnConfig
     
     '--- Cria Frame de Conteúdo Central -----------------------------------------
     Set fraConteudo = Me.Controls.Add("Forms.Frame.1", "fraConteudo", True)
@@ -441,6 +466,30 @@ End Sub
 
 Private Sub btnConfig_Click()
     ExibirPainel "Configurações"
+End Sub
+
+Private Sub m_btnDashboardEvents_Clicked()
+    btnDashboard_Click
+End Sub
+
+Private Sub m_btnTimelineEvents_Clicked()
+    btnTimeline_Click
+End Sub
+
+Private Sub m_btnCardsEvents_Clicked()
+    btnCards_Click
+End Sub
+
+Private Sub m_btnProducaoEvents_Clicked()
+    btnProducao_Click
+End Sub
+
+Private Sub m_btnEventosEvents_Clicked()
+    btnEventos_Click
+End Sub
+
+Private Sub m_btnConfigEvents_Clicked()
+    btnConfig_Click
 End Sub
 
 '================================================================================
