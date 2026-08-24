@@ -246,8 +246,15 @@ Private Sub btnSalvar_Click()
     '--- Cálculo da duração em horas -------------------------------------------
     duracao = (dataFim - dataInicio) * 24
     
+    '--- Valida duplicidade de ID_OP --------------------------------------------
+    If ID_OPExiste(idOP) Then
+        MsgBox "Já existe uma OP cadastrada com o ID informado.", vbExclamation, "Validação"
+        Me.txtID_OP.SetFocus
+        Exit Sub
+    End If
+    
     '--- Persiste dados via modEngine ------------------------------------------
-    Call SalvarNovaOP(idOP, produto, equipamento, quantidade, dataInicio, dataFim, duracao)
+    Call SalvarNovaOP(idOP, produto, equipamento, quantidade, dataInicio, dataFim, duracao, status)
     
     '--- Feedback e fechamento -------------------------------------------------
     MsgBox "Ordem de Produção cadastrada com sucesso!", vbInformation, "APS PURAN – Cadastro"
@@ -317,6 +324,46 @@ Sair:
 ErroCarregar:
     Resume Sair
 End Sub
+
+'================================================================================
+' FUNÇÃO PRIVADA: ID_OPExiste
+' PROPÓSITO: Verificar se um ID_OP já está cadastrado na TabelaOPs
+' RETORNO: True se existir, False caso contrário
+'================================================================================
+Private Function ID_OPExiste(pID As String) As Boolean
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim dados As Variant
+    Dim i As Long
+    Dim totalLinhas As Long
+    
+    On Error GoTo ErroVerificar
+    
+    Set ws = ThisWorkbook.Worksheets("BD_OPs")
+    Set tbl = ws.ListObjects("TabelaOPs")
+    
+    dados = tbl.Range.Value
+    
+    If IsError(dados) Then
+        ID_OPExiste = False
+        Exit Function
+    End If
+    
+    totalLinhas = UBound(dados, 1)
+    
+    For i = 2 To totalLinhas
+        If Trim(CStr(dados(i, 1))) = Trim(pID) Then
+            ID_OPExiste = True
+            Exit Function
+        End If
+    Next i
+    
+    ID_OPExiste = False
+    Exit Function
+    
+ErroVerificar:
+    ID_OPExiste = False
+End Function
 
 '================================================================================
 ' FUNÇÕES AUXILIARES DE CRIAÇÃO DE CONTROLES

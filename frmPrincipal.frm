@@ -150,6 +150,8 @@ Private Sub UserForm_Initialize()
         .Height = 540
         .BackColor = COR_PAINEL
         .BorderStyle = fmBorderStyleSingle
+        .ScrollBars = fmScrollBarsVertical
+        .ScrollHeight = 2000
         .Font.Size = 10
     End With
     

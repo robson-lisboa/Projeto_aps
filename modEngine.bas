@@ -45,7 +45,8 @@ Public Sub SalvarNovaOP(pID As String, _
                         pQtd As Long, _
                         pInicio As Date, _
                         pFim As Date, _
-                        pDuracao As Double)
+                        pDuracao As Double, _
+                        pStatus As String)
     Dim ws As Worksheet
     Dim tbl As ListObject
     Dim novaLinha As ListRow
@@ -79,7 +80,7 @@ Public Sub SalvarNovaOP(pID As String, _
         .Cells(1, tbl.ListColumns("Data_Inicio").Index).Value = pInicio
         .Cells(1, tbl.ListColumns("Data_Fim").Index).Value = pFim
         .Cells(1, tbl.ListColumns("Duracao_Horas").Index).Value = pDuracao
-        .Cells(1, tbl.ListColumns("Status").Index).Value = "Planejada"
+        .Cells(1, tbl.ListColumns("Status").Index).Value = pStatus
     End With
     
 Sair:

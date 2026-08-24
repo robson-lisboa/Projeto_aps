@@ -123,8 +123,19 @@ Public Sub CarregarTimeline(pContainer As MSForms.Frame)
         idOP = CStr(dados(posArray, 1))
         produto = CStr(dados(posArray, 2))
         equipamento = CStr(dados(posArray, 3))
-        inicio = CDate(dados(posArray, 5))
-        fim = CDate(dados(posArray, 6))
+        
+        If IsDate(dados(posArray, 5)) Then
+            inicio = CDate(dados(posArray, 5))
+        Else
+            inicio = 0
+        End If
+        
+        If IsDate(dados(posArray, 6)) Then
+            fim = CDate(dados(posArray, 6))
+        Else
+            fim = 0
+        End If
+        
         status = CStr(dados(posArray, 8))
         
         Dim corFundo As Long
@@ -143,7 +154,22 @@ Public Sub CarregarTimeline(pContainer As MSForms.Frame)
         End Select
         
         Dim valores As Variant
-        valores = Array(idOP, produto, equipamento, Format(inicio, "dd/mm/yy"), Format(fim, "dd/mm/yy"), status)
+        Dim strInicio As String
+        Dim strFim As String
+        
+        If IsDate(inicio) Then
+            strInicio = Format(inicio, "dd/mm/yy")
+        Else
+            strInicio = "--/--/--"
+        End If
+        
+        If IsDate(fim) Then
+            strFim = Format(fim, "dd/mm/yy")
+        Else
+            strFim = "--/--/--"
+        End If
+        
+        valores = Array(idOP, produto, equipamento, strInicio, strFim, status)
         
         Dim m As Long
         For m = LBound(valores) To UBound(valores)

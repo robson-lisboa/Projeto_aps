@@ -236,6 +236,12 @@ Private Sub btnSalvar_Click()
     End If
     
     '--- Persiste na TabelaEventos ---------------------------------------------
+    If ID_EventoExiste(idEvento) Then
+        MsgBox "Já existe um evento cadastrado com o ID informado.", vbExclamation, "Validação"
+        Me.txtID_Evento.SetFocus
+        Exit Sub
+    End If
+    
     SalvarEvento idEvento, tipo, equipamento, inicio, fim, motivo
     
     '--- Feedback e fechamento -------------------------------------------------
@@ -260,6 +266,46 @@ Private Sub btnCancelar_Click()
 End Sub
 
 '================================================================================
+' FUNÇÃO PRIVADA: ID_EventoExiste
+' PROPÓSITO: Verificar se um ID_Evento já está cadastrado na TabelaEventos
+' RETORNO: True se existir, False caso contrário
+'================================================================================
+Private Function ID_EventoExiste(pID As String) As Boolean
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim dados As Variant
+    Dim i As Long
+    Dim totalLinhas As Long
+    
+    On Error GoTo ErroVerificar
+    
+    Set ws = ThisWorkbook.Worksheets("BD_Eventos")
+    Set tbl = ws.ListObjects("TabelaEventos")
+    
+    dados = tbl.Range.Value
+    
+    If IsError(dados) Then
+        ID_EventoExiste = False
+        Exit Function
+    End If
+    
+    totalLinhas = UBound(dados, 1)
+    
+    For i = 2 To totalLinhas
+        If Trim(CStr(dados(i, 1))) = Trim(pID) Then
+            ID_EventoExiste = True
+            Exit Function
+        End If
+    Next i
+    
+    ID_EventoExiste = False
+    Exit Function
+    
+ErroVerificar:
+    ID_EventoExiste = False
+End Function
+
+'================================================================================
 ' SUBROTINA PRIVADA: CarregarEquipamentos
 ' PROPÓSITO: Popular ComboBox de equipamentos a partir da TabelaEquipamentos
 '================================================================================
@@ -272,17 +318,26 @@ Private Sub CarregarEquipamentos()
     Dim i As Long
     Dim totalLinhas As Long
     
+    Set ws = Nothing
+    Set tbl = Nothing
+    
     On Error Resume Next
     Set ws = ThisWorkbook.Worksheets("BD_Equipamentos")
-    On Error GoTo 0
+    On Error GoTo ErroCarregar
     
-    If ws Is Nothing Then Exit Sub
+    If ws Is Nothing Then
+        MsgBox "Planilha BD_Equipamentos não encontrada.", vbExclamation, "APS PURAN – Eventos"
+        Exit Sub
+    End If
     
     On Error Resume Next
     Set tbl = ws.ListObjects("TabelaEquipamentos")
-    On Error GoTo 0
+    On Error GoTo ErroCarregar
     
-    If tbl Is Nothing Then Exit Sub
+    If tbl Is Nothing Then
+        MsgBox "Tabela TabelaEquipamentos não encontrada.", vbExclamation, "APS PURAN – Eventos"
+        Exit Sub
+    End If
     
     dados = tbl.Range.Value
     
@@ -304,6 +359,7 @@ Sair:
     Exit Sub
     
 ErroCarregar:
+    MsgBox "Erro ao carregar lista de equipamentos: " & Err.Description, vbExclamation, "APS PURAN – Eventos"
     Resume Sair
 End Sub
 
