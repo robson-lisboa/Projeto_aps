@@ -38,7 +38,9 @@ Option Explicit
 '=== CONTROLES DO FORMULÁRIO ===================================================
 Private WithEvents btnDashboard As MSForms.CommandButton
 Private WithEvents btnTimeline As MSForms.CommandButton
+Private WithEvents btnCards As MSForms.CommandButton
 Private WithEvents btnProducao As MSForms.CommandButton
+Private WithEvents btnEventos As MSForms.CommandButton
 Private WithEvents btnConfig As MSForms.CommandButton
 
 Private fraMenu As MSForms.Frame
@@ -109,7 +111,7 @@ Private Sub UserForm_Initialize()
     End With
     
     '--- Cria Botões de Navegação ----------------------------------------------
-    botoes = Array("btnDashboard", "btnTimeline", "btnProducao", "btnConfig")
+    botoes = Array("btnDashboard", "btnTimeline", "btnCards", "btnProducao", "btnEventos", "btnConfig")
     posY = 12
     
     For i = LBound(botoes) To UBound(botoes)
@@ -119,8 +121,10 @@ Private Sub UserForm_Initialize()
         btn.Caption = _
             IIf(i = 0, "Dashboard", _
             IIf(i = 1, "Timeline", _
-            IIf(i = 2, "Produção", _
-            IIf(i = 3, "Configurações", ""))))
+            IIf(i = 2, "Cards", _
+            IIf(i = 3, "Produção", _
+            IIf(i = 4, "Eventos", _
+            IIf(i = 5, "Configurações", ""))))))
         btn.Left = ESPACAMENTO
         btn.Top = posY
         btn.Width = LARGURA_BOTAO - (2 * ESPACAMENTO)
@@ -166,16 +170,31 @@ End Sub
 Public Sub ExibirPainel(NomePainel As String)
     On Error GoTo ErroExibirPainel
     
-    ' Se for Dashboard, carrega a tela de KPIs; caso contrário, tela genérica
-    If NomePainel = "Dashboard" Then
-        CarregarDashboard
-    Else
-        ExibirPainelGenerico NomePainel
-    End If
+    ' Limpa controles anteriores dentro do frame de conteúdo
+    Dim ctrl As MSForms.Control
+    For Each ctrl In fraConteudo.Controls
+        fraConteudo.Controls.Remove ctrl.Name
+    Next ctrl
     
     ' Atualiza título do formulário
     Me.Caption = "APS PURAN – Sistema de Planejamento de Produção Industrial" & _
                  " | Módulo: " & NomePainel
+    
+    ' Direciona para a rotina específica de cada módulo
+    Select Case NomePainel
+        Case "Dashboard"
+            CarregarDashboard
+        Case "Timeline"
+            modTimeline.CarregarTimeline fraConteudo
+        Case "Cards"
+            modCards.CarregarCards fraConteudo
+        Case "Produção"
+            frmCadastroOP.Show vbModal
+        Case "Eventos"
+            frmEventos.Show vbModal
+        Case Else
+            ExibirPainelGenerico NomePainel
+    End Select
     
 Sair:
     Exit Sub
@@ -188,20 +207,13 @@ End Sub
 
 '================================================================================
 ' SUBROTINA PRIVADA: ExibirPainelGenerico
-' PROPÓSITO: Exibir painéis placeholder (Timeline, Produção, Configurações)
+' PROPÓSITO: Exibir painéis placeholder (Configurações)
 '================================================================================
 Private Sub ExibirPainelGenerico(NomePainel As String)
     On Error GoTo ErroGenerico
     
     Dim lblPainel As MSForms.Label
     
-    ' Limpa controles anteriores dentro do frame de conteúdo
-    Dim ctrl As MSForms.Control
-    For Each ctrl In fraConteudo.Controls
-        fraConteudo.Controls.Remove ctrl.Name
-    Next ctrl
-    
-    ' Cria label simulando o painel selecionado
     Set lblPainel = fraConteudo.Controls.Add("Forms.Label.1", "lblPainel_" & NomePainel, True)
     With lblPainel
         .Caption = "Painel Ativo: " & NomePainel
@@ -228,7 +240,6 @@ End Sub
 '================================================================================
 ' SUBROTINA PÚBLICA: CarregarDashboard
 ' PROPÓSITO: Renderizar indicadores de desempenho (KPIs) no frame de conteúdo
-'            utilizando dados em memória para máxima performance
 '================================================================================
 Public Sub CarregarDashboard()
     On Error GoTo ErroCarregarDashboard
@@ -244,24 +255,19 @@ Public Sub CarregarDashboard()
     Dim totalHorasPlanejadas As Double
     Dim totalHorasRealizadas As Double
     
-    '--- 1. Obtém dados em array (performance) ----------------------------------
     dados = ObterDadosOPsEmArray()
     
-    ' Verifica se houve erro na leitura
     If IsError(dados) Then
         Err.Raise vbObjectError + 200, "CarregarDashboard", _
             "Não foi possível carregar dados da TabelaOPs."
     End If
     
-    '--- 2. Processa KPIs -------------------------------------------------------
     totalLinhas = UBound(dados, 1)
     
-    ' Itera a partir da linha 2 (linha 1 é cabeçalho)
     For i = 2 To totalLinhas
         Dim statusAtual As String
         statusAtual = CStr(dados(i, 7))
         
-        ' Contagem por status
         Select Case Trim(statusAtual)
             Case "Concluído"
                 totalConcluidas = totalConcluidas + 1
@@ -273,20 +279,18 @@ Public Sub CarregarDashboard()
                 totalPlanejadas = totalPlanejadas + 1
         End Select
         
-        ' Soma de horas
         totalHorasPlanejadas = totalHorasPlanejadas + CDbl(dados(i, 7))
         totalHorasRealizadas = totalHorasRealizadas + CDbl(dados(i, 7))
     Next i
     
     totalPlanejadas = totalPlanejadas + totalConcluidas + totalEmAndamento + totalAtrasadas
     
-    '--- 3. Renderiza interface do Dashboard ------------------------------------
+    ' Renderiza interface do Dashboard
     Dim ctrl As MSForms.Control
     For Each ctrl In fraConteudo.Controls
         fraConteudo.Controls.Remove ctrl.Name
     Next ctrl
     
-    ' Título do módulo
     Dim titulo As MSForms.Label
     Set titulo = fraConteudo.Controls.Add("Forms.Label.1", "lblDashTitulo", True)
     With titulo
@@ -302,7 +306,6 @@ Public Sub CarregarDashboard()
         .TextAlign = fmTextAlignCenter
     End With
     
-    ' Layout em grid: 2 colunas de KPIs
     Const COLUNA1_X As Single = 40
     Const COLUNA2_X As Single = 420
     Const LINHA_INICIO_Y As Single = 80
@@ -310,19 +313,15 @@ Public Sub CarregarDashboard()
     Const ALTURA_KPI As Single = 100
     Const ESPACO_Y As Single = 120
     
-    '--- KPI: Total Planejadas -----------------------------------------------
     Set lblKPIPlanejadas = CriaKPI(COLUNA1_X, LINHA_INICIO_Y, _
         "Total de Produções Planejadas", CStr(totalPlanejadas), COR_TEXTO_ESCURO)
     
-    '--- KPI: Concluídas ------------------------------------------------------
     Set lblKPIConcluidas = CriaKPI(COLUNA2_X, LINHA_INICIO_Y, _
         "Produções Concluídas", CStr(totalConcluidas), vbGreen)
     
-    '--- KPI: Em Andamento ----------------------------------------------------
     Set lblKPIEmAndamento = CriaKPI(COLUNA1_X, LINHA_INICIO_Y + ESPACO_Y, _
         "Produções em Andamento", CStr(totalEmAndamento), COR_HEADER)
     
-    '--- KPI: Atrasadas (destaque vermelho se > 0) ----------------------------
     Dim corAtrasos As Long
     If totalAtrasadas > 0 Then
         corAtrasos = COR_ALERTA
@@ -333,11 +332,9 @@ Public Sub CarregarDashboard()
     Set lblKPIAtrasadas = CriaKPI(COLUNA2_X, LINHA_INICIO_Y + ESPACO_Y, _
         "Produções Atrasadas", CStr(totalAtrasadas), corAtrasos)
     
-    '--- KPI: Horas Planejadas -------------------------------------------------
     Set lblKPIHorasPlanejadas = CriaKPI(COLUNA1_X, LINHA_INICIO_Y + 2 * ESPACO_Y, _
         "Total de Horas Planejadas", Format(totalHorasPlanejadas, "0.00"), COR_TEXTO_ESCURO)
     
-    '--- KPI: Horas Realizadas -------------------------------------------------
     Set lblKPIHorasRealizadas = CriaKPI(COLUNA2_X, LINHA_INICIO_Y + 2 * ESPACO_Y, _
         "Total de Horas Realizadas", Format(totalHorasRealizadas, "0.00"), COR_TEXTO_ESCURO)
     
@@ -353,8 +350,6 @@ End Sub
 '================================================================================
 ' FUNÇÃO PRIVADA: CriaKPI
 ' PROPÓSITO: Fábrica de controles Label estilizados para exibição de indicadores
-' PARÂMETROS: Posição X, Y, Título, Valor e Cor do valor
-' RETORNO: MSForms.Label configurado
 '================================================================================
 Private Function CriaKPI(pLeft As Single, pTop As Single, _
                          pTitulo As String, pValor As String, _
@@ -363,8 +358,10 @@ Private Function CriaKPI(pLeft As Single, pTop As Single, _
     Dim lblValor As MSForms.Label
     Dim lblTituloKPI As MSForms.Label
     
-    ' Frame container do KPI
-    Set lbl = fraConteudo.Controls.Add("Forms.Label.1", "lblKPI_" & Format(Now, "SSSSS") & "_" & CStr(Int(Rnd * 100000)), True)
+    Dim uniqueID As String
+    uniqueID = Format(Now, "SSSSS") & "_" & CStr(Int(Rnd * 100000))
+    
+    Set lbl = fraConteudo.Controls.Add("Forms.Label.1", "lblKPI_" & uniqueID, True)
     With lbl
         .Left = pLeft
         .Top = pTop
@@ -374,8 +371,7 @@ Private Function CriaKPI(pLeft As Single, pTop As Single, _
         .BorderStyle = fmBorderStyleSingle
     End With
     
-    ' Título do indicador
-    Set lblTituloKPI = fraConteudo.Controls.Add("Forms.Label.1", "lblKPI_" & Format(Now, "SSSSS") & "_T", True)
+    Set lblTituloKPI = fraConteudo.Controls.Add("Forms.Label.1", "lblKPI_" & uniqueID & "_T", True)
     With lblTituloKPI
         .Caption = pTitulo
         .Left = pLeft + 10
@@ -389,8 +385,7 @@ Private Function CriaKPI(pLeft As Single, pTop As Single, _
         .TextAlign = fmTextAlignCenter
     End With
     
-    ' Valor do indicador
-    Set lblValor = fraConteudo.Controls.Add("Forms.Label.1", "lblKPI_" & Format(Now, "SSSSS") & "_V", True)
+    Set lblValor = fraConteudo.Controls.Add("Forms.Label.1", "lblKPI_" & uniqueID & "_V", True)
     With lblValor
         .Caption = pValor
         .Left = pLeft + 10
@@ -419,8 +414,16 @@ Private Sub btnTimeline_Click()
     ExibirPainel "Timeline"
 End Sub
 
+Private Sub btnCards_Click()
+    ExibirPainel "Cards"
+End Sub
+
 Private Sub btnProducao_Click()
     ExibirPainel "Produção"
+End Sub
+
+Private Sub btnEventos_Click()
+    ExibirPainel "Eventos"
 End Sub
 
 Private Sub btnConfig_Click()
