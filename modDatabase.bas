@@ -1,0 +1,99 @@
+Attribute VB_Name = "modDatabase"
+'================================================================================
+' MÓDULO: modDatabase
+' DESCRIÇÃO: Gerenciamento do banco de dados oculto (ListObjects/ListObjects)
+' VERSÃO: 1.0
+'================================================================================
+Option Explicit
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: CriarEstruturasDeDados
+' PROPÓSITO: Garantir a existência das planilhas ocultas e suas tabelas estruturadas
+'--------------------------------------------------------------------------------
+Public Sub CriarEstruturasDeDados()
+    On Error GoTo ErroCriarEstruturas
+    
+    Dim wb As Workbook
+    Dim ws As Worksheet
+    
+    Set wb = ThisWorkbook
+    
+    Application.ScreenUpdating = False
+    
+    '--- BD_OPs ------------------------------------------------------------------
+    If Not PlanilhaExiste("BD_OPs") Then
+        Set ws = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
+        ws.Name = "BD_OPs"
+        CriarTabela ws, "TabelaOPs", Array("ID_OP", "Produto", "Equipamento", _
+            "Quantidade", "Data_Inicio", "Data_Fim", "Duracao_Horas", "Status")
+        ws.Visible = xlSheetVeryHidden
+    End If
+    
+    '--- BD_Equipamentos ---------------------------------------------------------
+    If Not PlanilhaExiste("BD_Equipamentos") Then
+        Set ws = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
+        ws.Name = "BD_Equipamentos"
+        CriarTabela ws, "TabelaEquipamentos", Array("ID_Equipamento", "Nome", _
+            "Capacidade_Hora", "Status_Manutencao")
+        ws.Visible = xlSheetVeryHidden
+    End If
+    
+    '--- BD_Eventos --------------------------------------------------------------
+    If Not PlanilhaExiste("BD_Eventos") Then
+        Set ws = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
+        ws.Name = "BD_Eventos"
+        CriarTabela ws, "TabelaEventos", Array("ID_Evento", "Tipo", "Equipamento", _
+            "Inicio", "Fim", "Motivo")
+        ws.Visible = xlSheetVeryHidden
+    End If
+    
+    '--- BD_Config ---------------------------------------------------------------
+    If Not PlanilhaExiste("BD_Config") Then
+        Set ws = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
+        ws.Name = "BD_Config"
+        ws.Visible = xlSheetVeryHidden
+    End If
+    
+Sair:
+    Application.ScreenUpdating = True
+    Exit Sub
+    
+ErroCriarEstruturas:
+    MsgBox "Erro ao criar estruturas de dados: " & Err.Description, _
+           vbCritical + vbOKOnly, "APS PURAN - Banco de Dados"
+    Resume Sair
+End Sub
+
+'--------------------------------------------------------------------------------
+' FUNÇÃO: PlanilhaExiste
+' PROPÓSITO: Verificar se uma planilha com o nome informado existe na pasta de trabalho
+'--------------------------------------------------------------------------------
+Private Function PlanilhaExiste(pNome As String) As Boolean
+    Dim ws As Worksheet
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(pNome)
+    PlanilhaExiste = Not ws Is Nothing
+    On Error GoTo 0
+End Function
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: CriarTabela
+' PROPÓSITO: Criar uma ListObject (Tabela Estruturada) com os cabeçalhos definidos
+'--------------------------------------------------------------------------------
+Private Sub CriarTabela(pWorksheet As Worksheet, _
+                        pNomeTabela As String, _
+                        pColunas As Variant)
+    Dim i As Long
+    Dim tbl As ListObject
+    
+    With pWorksheet
+        For i = LBound(pColunas) To UBound(pColunas)
+            .Cells(1, i + 1).Value = pColunas(i)
+            .Cells(1, i + 1).Font.Bold = True
+        Next i
+        
+        Set tbl = .ListObjects.Add(xlSrcRange, .Range("A1").Resize(1, UBound(pColunas) + 1), , xlYes)
+        tbl.Name = pNomeTabela
+        tbl.TableStyle = "TableStyleMedium2"
+    End With
+End Sub
