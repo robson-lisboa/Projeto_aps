@@ -162,6 +162,8 @@ Private Sub UserForm_Initialize()
         .Value = "Planejada"
     End With
     
+    CarregarEquipamentos
+    
 Sair:
     Exit Sub
     
@@ -266,6 +268,54 @@ End Sub
 Private Sub btnCancelar_Click()
     On Error Resume Next
     Unload Me
+End Sub
+
+'================================================================================
+' SUBROTINA PRIVADA: CarregarEquipamentos
+' PROPÓSITO: Popular ComboBox de equipamentos a partir da TabelaEquipamentos
+'================================================================================
+Private Sub CarregarEquipamentos()
+    On Error GoTo ErroCarregar
+    
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim dados As Variant
+    Dim i As Long
+    Dim totalLinhas As Long
+    
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets("BD_Equipamentos")
+    On Error GoTo 0
+    
+    If ws Is Nothing Then Exit Sub
+    
+    On Error Resume Next
+    Set tbl = ws.ListObjects("TabelaEquipamentos")
+    On Error GoTo 0
+    
+    If tbl Is Nothing Then Exit Sub
+    
+    dados = tbl.Range.Value
+    
+    If IsError(dados) Then Exit Sub
+    
+    totalLinhas = UBound(dados, 1)
+    
+    Me.cboEquipamento.Clear
+    
+    For i = 2 To totalLinhas
+        Dim nomeEq As String
+        nomeEq = CStr(dados(i, 2))
+        If Trim(nomeEq) <> "" Then
+            Me.cboEquipamento.AddItem nomeEq
+        End If
+    Next i
+    
+Sair:
+    Exit Sub
+    
+ErroCarregar:
+    Resume Sair
 End Sub
 
 '================================================================================

@@ -24,7 +24,7 @@ Private Sub Workbook_Open()
     
     ' Interface: oculta elementos visuais desnecessários e maximiza a janela
     Application.DisplayFormulaBar = False
-    ActiveWindow.DisplayHeadings = False
+    If Not ActiveWindow Is Nothing Then ActiveWindow.DisplayHeadings = False
     Application.WindowState = xlMaximized
     
     ' Integridade: garante que o banco de dados oculto esteja íntegro
@@ -37,6 +37,7 @@ Private Sub Workbook_Open()
 Sair:
     ' Segurança: garante que a atualização de tela seja reativada
     Application.ScreenUpdating = True
+    Set principalForm = Nothing
     Exit Sub
     
 ErroInicializacao:

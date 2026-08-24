@@ -55,6 +55,9 @@ Private lblKPIAtrasadas As MSForms.Label
 Private lblKPIHorasPlanejadas As MSForms.Label
 Private lblKPIHorasRealizadas As MSForms.Label
 
+' Armazena o último painel não-modal para recarregamento após fechar modais
+Private m_UltimoPainelNaoModal As String
+
 '=== PROPRIEDADES VISUAIS CORPORATIVAS =========================================
 Private Const COR_FUNDO As Long = 4474559
 Private Const COR_PAINEL As Long = 14211288
@@ -151,6 +154,7 @@ Private Sub UserForm_Initialize()
     End With
     
     ' Exibe o painel inicial
+    m_UltimoPainelNaoModal = "Dashboard"
     ExibirPainel "Dashboard"
     
 Sair:
@@ -180,6 +184,11 @@ Public Sub ExibirPainel(NomePainel As String)
     Me.Caption = "APS PURAN – Sistema de Planejamento de Produção Industrial" & _
                  " | Módulo: " & NomePainel
     
+    ' Armazena o último painel não-modal para recuperação após modais
+    If NomePainel <> "Produção" And NomePainel <> "Eventos" Then
+        m_UltimoPainelNaoModal = NomePainel
+    End If
+    
     ' Direciona para a rotina específica de cada módulo
     Select Case NomePainel
         Case "Dashboard"
@@ -190,8 +199,10 @@ Public Sub ExibirPainel(NomePainel As String)
             modCards.CarregarCards fraConteudo
         Case "Produção"
             frmCadastroOP.Show vbModal
+            ExibirPainel m_UltimoPainelNaoModal
         Case "Eventos"
             frmEventos.Show vbModal
+            ExibirPainel m_UltimoPainelNaoModal
         Case Else
             ExibirPainelGenerico NomePainel
     End Select
@@ -266,7 +277,7 @@ Public Sub CarregarDashboard()
     
     For i = 2 To totalLinhas
         Dim statusAtual As String
-        statusAtual = CStr(dados(i, 7))
+        statusAtual = CStr(dados(i, 8))
         
         Select Case Trim(statusAtual)
             Case "Concluído"

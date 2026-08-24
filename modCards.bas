@@ -88,7 +88,7 @@ Public Sub CarregarCards(pContainer As MSForms.Frame)
         
         idOP = CStr(dados(posArray, 1))
         produto = CStr(dados(posArray, 2))
-        equipamento = CStr(posArray, 3)
+        equipamento = CStr(dados(posArray, 3))
         inicio = CDate(dados(posArray, 5))
         fim = CDate(dados(posArray, 6))
         status = CStr(dados(posArray, 8))
