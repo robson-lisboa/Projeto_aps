@@ -1140,16 +1140,55 @@ Private Sub cmdMes_Click()
 End Sub
 
 Private Sub cmdPersonalizado_Click()
+    On Error GoTo ErroPersonalizado
+    
+    If Not IsDate(txtDataInicial.Text) Or Not IsDate(txtDataFinal.Text) Then
+        MsgBox "Informe datas válidas para o período personalizado.", vbExclamation, "Validação"
+        Exit Sub
+    End If
+    
     m_DataInicioPeriodo = CDate(txtDataInicial.Text)
     m_DataFimPeriodo = CDate(txtDataFinal.Text)
+    
+    If m_DataFimPeriodo < m_DataInicioPeriodo Then
+        MsgBox "A data final não pode ser anterior à data inicial.", vbExclamation, "Validação"
+        Exit Sub
+    End If
+    
     Call CarregarPlanejamento
+    
+Sair:
+    Exit Sub
+    
+ErroPersonalizado:
+    MsgBox "Erro ao aplicar período personalizado: " & Err.Description, vbCritical, "APS PURAN"
+    Resume Sair
 End Sub
 
 Private Sub cmdAplicarPeriodo_Click()
-    On Error Resume Next
+    On Error GoTo ErroAplicarPeriodo
+    
+    If Not IsDate(txtDataInicial.Text) Or Not IsDate(txtDataFinal.Text) Then
+        MsgBox "Informe datas válidas para o período personalizado.", vbExclamation, "Validação"
+        Exit Sub
+    End If
+    
     m_DataInicioPeriodo = CDate(txtDataInicial.Text)
     m_DataFimPeriodo = CDate(txtDataFinal.Text)
+    
+    If m_DataFimPeriodo < m_DataInicioPeriodo Then
+        MsgBox "A data final não pode ser anterior à data inicial.", vbExclamation, "Validação"
+        Exit Sub
+    End If
+    
     Call CarregarPlanejamento
+    
+Sair:
+    Exit Sub
+    
+ErroAplicarPeriodo:
+    MsgBox "Erro ao aplicar período personalizado: " & Err.Description, vbCritical, "APS PURAN"
+    Resume Sair
 End Sub
 
 Private Sub cmdZoomMenos_Click()
