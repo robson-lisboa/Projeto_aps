@@ -37,6 +37,7 @@ Option Explicit
 
 Private m_ID_OP As String
 Private btnEditar As MSForms.CommandButton
+Private btnExcluir As MSForms.CommandButton
 
 Private Sub UserForm_Initialize()
     On Error GoTo ErroInicializacao
@@ -47,13 +48,26 @@ Private Sub UserForm_Initialize()
     Set btnEditar = Me.Controls.Add("Forms.CommandButton.1", "btnEditar", True)
     With btnEditar
         .Caption = "Editar"
-        .Left = 180
+        .Left = 60
         .Top = 340
         .Width = 120
         .Height = 30
         .Font.Size = 10
         .Font.Bold = True
         .BackColor = 15773696
+        .ForeColor = 16777215
+    End With
+    
+    Set btnExcluir = Me.Controls.Add("Forms.CommandButton.1", "btnExcluir", True)
+    With btnExcluir
+        .Caption = "Excluir"
+        .Left = 200
+        .Top = 340
+        .Width = 120
+        .Height = 30
+        .Font.Size = 10
+        .Font.Bold = True
+        .BackColor = 255
         .ForeColor = 16777215
     End With
     
@@ -115,7 +129,26 @@ Private Sub btnEditar_Click()
     On Error Resume Next
     frmCadastroOP.CarregarParaEdicao m_ID_OP
     frmCadastroOP.Show vbModal
+End Sub
+
+Private Sub btnExcluir_Click()
+    On Error GoTo ErroExcluir
+    
+    Dim resposta As VbMsgBoxResult
+    resposta = MsgBox("Deseja realmente excluir a OP " & m_ID_OP & "?", _
+                      vbQuestion + vbYesNo, "Confirmação de Exclusão")
+    If resposta = vbNo Then Exit Sub
+    
+    Call ExcluirOP(m_ID_OP)
+    MsgBox "OP excluída com sucesso!", vbInformation, "APS PURAN"
     Unload Me
+    
+Sair:
+    Exit Sub
+    
+ErroExcluir:
+    MsgBox "Erro ao excluir OP: " & Err.Description, vbCritical, "APS PURAN"
+    Resume Sair
 End Sub
 
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)

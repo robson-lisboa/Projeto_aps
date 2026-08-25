@@ -163,3 +163,54 @@ ErroAtualizar:
            vbCritical + vbOKOnly, "APS PURAN - Engine"
     Resume Sair
 End Sub
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: ExcluirOP
+' PROPÓSITO: Excluir uma Ordem de Produção existente da TabelaOPs
+' PARÂMETROS: pID As String – ID da OP a ser excluída
+'--------------------------------------------------------------------------------
+Public Sub ExcluirOP(pID As String)
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim i As Long
+    Dim totalLinhas As Long
+    Dim dados As Variant
+    Dim linhaEncontrada As Long
+    
+    On Error GoTo ErroExcluir
+    
+    If Trim(pID) = "" Then
+        Err.Raise vbObjectError + 105, "ExcluirOP", "ID da OP não informado."
+    End If
+    
+    Set ws = ThisWorkbook.Worksheets("BD_OPs")
+    Set tbl = ws.ListObjects("TabelaOPs")
+    
+    Application.ScreenUpdating = False
+    
+    dados = tbl.Range.Value
+    totalLinhas = UBound(dados, 1)
+    linhaEncontrada = 0
+    
+    For i = 2 To totalLinhas
+        If Trim(CStr(dados(i, 1))) = Trim(pID) Then
+            linhaEncontrada = i
+            Exit For
+        End If
+    Next i
+    
+    If linhaEncontrada = 0 Then
+        Err.Raise vbObjectError + 106, "ExcluirOP", "OP não encontrada para exclusão."
+    End If
+    
+    tbl.ListRows(linhaEncontrada - 1).Delete
+    
+Sair:
+    Application.ScreenUpdating = True
+    Exit Sub
+    
+ErroExcluir:
+    MsgBox "Erro ao excluir OP: " & Err.Description, _
+           vbCritical + vbOKOnly, "APS PURAN - Engine"
+    Resume Sair
+End Sub
