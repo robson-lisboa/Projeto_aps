@@ -263,6 +263,7 @@ Public Sub CarregarGantt(pContainer As MSForms.Frame, Optional pHScroll As MSFor
     '--- 3. Monta array final de postos únicos ----------------------------------
     Dim numPostos As Long
     numPostos = colPostos.Count
+    If numPostos <= 0 Then Exit Sub
     Dim arrPostos() As String
     ReDim arrPostos(1 To numPostos)
     For i = 1 To numPostos
