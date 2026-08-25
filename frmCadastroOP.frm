@@ -195,6 +195,8 @@ Public Sub CarregarParaEdicao(pID_OP As String)
     m_EditandoID = pID_OP
     Me.Caption = "APS PURAN – Editar Ordem de Produção: " & pID_OP
     
+    Me.Controls("txtID_OP").Enabled = False
+    
     Dim dados() As Variant
     dados = ObterDadosOPsEmArray()
     
