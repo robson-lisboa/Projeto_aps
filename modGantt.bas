@@ -705,6 +705,9 @@ Public Sub CarregarGantt(pContainer As MSForms.Frame, Optional pHScroll As MSFor
         End With
     End If
     
+    ' Ajusta scroll vertical do container
+    pContainer.ScrollHeight = numPostos * ALTURA_LINHA_POSTO + 40 + 28
+    
     '--- 13. Configura scroll horizontal -----------------------------------------
     If Not pHScroll Is Nothing Then
         Dim scrollMax As Long

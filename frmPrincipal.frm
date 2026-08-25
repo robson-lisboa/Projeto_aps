@@ -349,6 +349,7 @@ Private Sub UserForm_Initialize()
         .Height = Me.ClientHeight - 96
         .BackColor = COR_FUNDO
         .BorderStyle = fmBorderStyleSingle
+        .ScrollBars = fmScrollBarsVertical
         .Font.Size = 10
     End With
     
