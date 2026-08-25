@@ -127,6 +127,7 @@ Private cmdAdicionarOP As MSForms.CommandButton
 Private cmdSimularProducao As MSForms.CommandButton
 Private cboFiltroStatus As MSForms.ComboBox
 Private txtBusca As MSForms.TextBox
+Private cboOrdenar As MSForms.ComboBox
 
 ' Labels do Dashboard (nível de módulo para permitir atualização)
 Private lblKPIPlanejadas As MSForms.Label
@@ -171,6 +172,7 @@ Private m_DataFimPeriodo As Date
 Private m_Zoom As Double
 Private m_FiltroStatus As String
 Private m_TextoBusca As String
+Private m_OrdenarPor As String
 
 '================================================================================
 ' EVENTO: UserForm_Initialize
@@ -536,6 +538,24 @@ Private Sub UserForm_Initialize()
     End With
     periodoLeft = periodoLeft + 126
     
+    ' Ordenação
+    Set cboOrdenar = Me.Controls.Add("Forms.ComboBox.1", "cboOrdenar", True)
+    With cboOrdenar
+        .AddItem "Ordenar por..."
+        .AddItem "ID_OP"
+        .AddItem "Data Início"
+        .AddItem "Duração"
+        .AddItem "Status"
+        .Value = "Ordenar por..."
+        .Left = periodoLeft
+        .Top = 12
+        .Width = 110
+        .Height = 22
+        .Font.Size = 9
+        .Style = fmStyleDropDownList
+    End With
+    periodoLeft = periodoLeft + 116
+    
     ' Ações
     Set cmdAtualizar = Me.Controls.Add("Forms.CommandButton.1", "cmdAtualizar", True)
     With cmdAtualizar
@@ -717,7 +737,7 @@ Public Sub CarregarPlanejamento()
     hScrollProducao.Top = Me.ClientHeight - 96 - 20
     hScrollProducao.Width = Me.ClientWidth - 196
     
-    Call modGantt.CarregarGantt(fraProducao, hScrollProducao, m_DataInicioPeriodo, m_DataFimPeriodo, m_Zoom, m_FiltroStatus, m_TextoBusca)
+    Call modGantt.CarregarGantt(fraProducao, hScrollProducao, m_DataInicioPeriodo, m_DataFimPeriodo, m_Zoom, m_FiltroStatus, m_TextoBusca, m_OrdenarPor)
     
 Sair:
     Exit Sub
@@ -1168,6 +1188,15 @@ End Sub
 
 Private Sub txtBusca_Change()
     m_TextoBusca = Trim(txtBusca.Text)
+    Call CarregarPlanejamento
+End Sub
+
+Private Sub cboOrdenar_Change()
+    If cboOrdenar.Value <> "Ordenar por..." Then
+        m_OrdenarPor = cboOrdenar.Value
+    Else
+        m_OrdenarPor = ""
+    End If
     Call CarregarPlanejamento
 End Sub
 

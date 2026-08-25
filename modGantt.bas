@@ -210,7 +210,7 @@ End Function
 Public Sub CarregarGantt(pContainer As MSForms.Frame, Optional pHScroll As MSForms.ScrollBar = Nothing, _
                          Optional pDataInicio As Date = 0, Optional pDataFim As Date = 0, _
                          Optional pZoom As Double = 1#, Optional pFiltroStatus As String = "Todos", _
-                         Optional pTextoBusca As String = "")
+                         Optional pTextoBusca As String = "", Optional pOrdenarPor As String = "")
     On Error GoTo ErroCarregarGantt
     
     Dim dados() As Variant
@@ -481,6 +481,11 @@ Public Sub CarregarGantt(pContainer As MSForms.Frame, Optional pHScroll As MSFor
         posArrayOP = posArrayOP + 1
     Next i
     
+    ' Ordena OPs conforme parametro
+    If pOrdenarPor <> "" Then
+        Call OrdenarOPs(ops, pOrdenarPor)
+    End If
+    
     ' Detecta conflitos
     Dim conflitos As Collection
     Set conflitos = DetectarConflitos(colecaoOPs, colPostos)
@@ -748,4 +753,42 @@ ErroCarregarGantt:
     MsgBox "Erro ao carregar planejamento: " & Err.Description, _
            vbCritical + vbOKOnly, "APS PURAN – Planejamento"
     Resume Sair
+End Sub
+
+'--------------------------------------------------------------------------------
+' SUBROTINA PRIVADA: OrdenarOPs
+' PROPÓSITO: Ordenar array de OPs conforme campo especificado
+' PARÂMETROS: pOPs() As clsCardProducao, pCampo As String
+'--------------------------------------------------------------------------------
+Private Sub OrdenarOPs(pOPs() As clsCardProducao, pCampo As String)
+    Dim i As Long, j As Long
+    Dim numOPs As Long
+    Dim temp As clsCardProducao
+    
+    numOPs = UBound(pOPs) - LBound(pOPs) + 1
+    
+    ' Bubble sort simples
+    For i = 1 To numOPs - 1
+        For j = i + 1 To numOPs
+            Dim trocar As Boolean
+            trocar = False
+            
+            Select Case pCampo
+                Case "ID_OP"
+                    If LCase(pOPs(i).ID_OP) > LCase(pOPs(j).ID_OP) Then trocar = True
+                Case "Data Início"
+                    If pOPs(i).DataInicio > pOPs(j).DataInicio Then trocar = True
+                Case "Duração"
+                    If pOPs(i).Duracao < pOPs(j).Duracao Then trocar = True
+                Case "Status"
+                    If LCase(pOPs(i).Status) > LCase(pOPs(j).Status) Then trocar = True
+            End Select
+            
+            If trocar Then
+                Set temp = pOPs(i)
+                Set pOPs(i) = pOPs(j)
+                Set pOPs(j) = temp
+            End If
+        Next j
+    Next i
 End Sub
