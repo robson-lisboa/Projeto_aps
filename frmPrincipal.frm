@@ -109,7 +109,6 @@ Private btnFechar As MSForms.CommandButton
 ' Área de produção (planejamento temporal)
 Private fraProducao As MSForms.Frame
 Private hScrollProducao As MSForms.ScrollBar
-Private m_CardEvents As Collection
 
 ' Controles do cabeçalho de planejamento
 Private cmdHoje As MSForms.CommandButton
@@ -682,8 +681,7 @@ Public Sub CarregarPlanejamento()
     hScrollProducao.Top = Me.ClientHeight - 96 - 20
     hScrollProducao.Width = Me.ClientWidth - 196
     
-    Set m_CardEvents = New Collection
-    Call modGantt.CarregarGantt(fraProducao, hScrollProducao, m_DataInicioPeriodo, m_DataFimPeriodo, m_Zoom, m_CardEvents)
+    Call modGantt.CarregarGantt(fraProducao, hScrollProducao, m_DataInicioPeriodo, m_DataFimPeriodo, m_Zoom)
     
 Sair:
     Exit Sub

@@ -208,8 +208,7 @@ End Function
 ' PARÂMETROS: pContainer As MSForms.Frame, pHScroll As MSForms.ScrollBar (opcional)
 '--------------------------------------------------------------------------------
 Public Sub CarregarGantt(pContainer As MSForms.Frame, Optional pHScroll As MSForms.ScrollBar = Nothing, _
-                         Optional pDataInicio As Date = 0, Optional pDataFim As Date = 0, _
-                         Optional pZoom As Double = 1#, Optional pColecaoEventos As Collection = Nothing)
+                         Optional pDataInicio As Date = 0, Optional pDataFim As Date = 0, Optional pZoom As Double = 1#)
     On Error GoTo ErroCarregarGantt
     
     Dim dados() As Variant
@@ -560,14 +559,6 @@ Public Sub CarregarGantt(pContainer As MSForms.Frame, Optional pHScroll As MSFor
             .BackColor = corCard
             .BorderStyle = fmBorderStyleSingle
         End With
-        
-        ' Vincula evento de clique do card
-        If Not pColecaoEventos Is Nothing Then
-            Dim evtCard As clsCardEvents
-            Set evtCard = New clsCardEvents
-            Set evtCard.Card = card
-            pColecaoEventos.Add evtCard
-        End If
         
         ' Borda colorida (esquerda)
         Dim bordaEsq As MSForms.Label
