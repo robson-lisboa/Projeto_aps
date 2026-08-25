@@ -209,7 +209,8 @@ End Function
 '--------------------------------------------------------------------------------
 Public Sub CarregarGantt(pContainer As MSForms.Frame, Optional pHScroll As MSForms.ScrollBar = Nothing, _
                          Optional pDataInicio As Date = 0, Optional pDataFim As Date = 0, _
-                         Optional pZoom As Double = 1#, Optional pFiltroStatus As String = "Todos")
+                         Optional pZoom As Double = 1#, Optional pFiltroStatus As String = "Todos", _
+                         Optional pTextoBusca As String = "")
     On Error GoTo ErroCarregarGantt
     
     Dim dados() As Variant
@@ -527,6 +528,16 @@ Public Sub CarregarGantt(pContainer As MSForms.Frame, Optional pHScroll As MSFor
         ' Aplica filtro de status
         If pFiltroStatus <> "Todos" Then
             If Trim(opAtual.Status) <> Trim(pFiltroStatus) Then
+                GoTo ProximaOP
+            End If
+        End If
+        
+        ' Aplica filtro de busca
+        If pTextoBusca <> "" Then
+            Dim textoBuscaLower As String
+            textoBuscaLower = LCase(Trim(pTextoBusca))
+            If LCase(Trim(opAtual.ID_OP)) <> textoBuscaLower And _
+               LCase(Trim(opAtual.Produto)) <> textoBuscaLower Then
                 GoTo ProximaOP
             End If
         End If

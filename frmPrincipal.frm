@@ -126,6 +126,7 @@ Private cmdAtualizar As MSForms.CommandButton
 Private cmdAdicionarOP As MSForms.CommandButton
 Private cmdSimularProducao As MSForms.CommandButton
 Private cboFiltroStatus As MSForms.ComboBox
+Private txtBusca As MSForms.TextBox
 
 ' Labels do Dashboard (nível de módulo para permitir atualização)
 Private lblKPIPlanejadas As MSForms.Label
@@ -169,6 +170,7 @@ Private m_DataInicioPeriodo As Date
 Private m_DataFimPeriodo As Date
 Private m_Zoom As Double
 Private m_FiltroStatus As String
+Private m_TextoBusca As String
 
 '================================================================================
 ' EVENTO: UserForm_Initialize
@@ -521,6 +523,19 @@ Private Sub UserForm_Initialize()
     End With
     periodoLeft = periodoLeft + 106
     
+    ' Busca
+    Set txtBusca = Me.Controls.Add("Forms.TextBox.1", "txtBusca", True)
+    With txtBusca
+        .Text = ""
+        .Left = periodoLeft
+        .Top = 12
+        .Width = 120
+        .Height = 22
+        .Font.Size = 9
+        .PlaceholderText = "Buscar OP..."
+    End With
+    periodoLeft = periodoLeft + 126
+    
     ' Ações
     Set cmdAtualizar = Me.Controls.Add("Forms.CommandButton.1", "cmdAtualizar", True)
     With cmdAtualizar
@@ -702,7 +717,7 @@ Public Sub CarregarPlanejamento()
     hScrollProducao.Top = Me.ClientHeight - 96 - 20
     hScrollProducao.Width = Me.ClientWidth - 196
     
-    Call modGantt.CarregarGantt(fraProducao, hScrollProducao, m_DataInicioPeriodo, m_DataFimPeriodo, m_Zoom, m_FiltroStatus)
+    Call modGantt.CarregarGantt(fraProducao, hScrollProducao, m_DataInicioPeriodo, m_DataFimPeriodo, m_Zoom, m_FiltroStatus, m_TextoBusca)
     
 Sair:
     Exit Sub
@@ -1148,6 +1163,11 @@ End Sub
 
 Private Sub cboFiltroStatus_Change()
     m_FiltroStatus = cboFiltroStatus.Value
+    Call CarregarPlanejamento
+End Sub
+
+Private Sub txtBusca_Change()
+    m_TextoBusca = Trim(txtBusca.Text)
     Call CarregarPlanejamento
 End Sub
 
