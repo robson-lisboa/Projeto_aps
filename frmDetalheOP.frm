@@ -143,6 +143,7 @@ Private Sub btnEditar_Click()
     On Error Resume Next
     frmCadastroOP.CarregarParaEdicao m_ID_OP
     frmCadastroOP.Show vbModal
+    Unload Me
 End Sub
 
 Private Sub btnExcluir_Click()
