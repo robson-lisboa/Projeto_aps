@@ -761,3 +761,186 @@ ErroImportar:
     MsgBox "Erro ao importar OPs para simulação: " & Err.Description, vbCritical, "APS PURAN - Engine"
     Resume Sair
 End Sub
+
+'--------------------------------------------------------------------------------
+' FUNÇÃO: CalcularCapacidadePorPosto
+' PROPÓSITO: Calcular horas planejadas, disponíveis e ocupação por posto
+' PARÂMETROS: pID_Simulacao As String
+' RETORNO: Dictionary com capacidade por posto (chave = nome posto)
+'--------------------------------------------------------------------------------
+Public Function CalcularCapacidadePorPosto(pID_Simulacao As String) As Object
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim dados As Variant
+    Dim i As Long, totalLinhas As Long
+    Dim capacidade As Object
+    Dim nomePosto As String
+    Dim horasPlanejadas As Double
+    
+    On Error GoTo ErroCapacidade
+    
+    Set capacidade = CreateObject("Scripting.Dictionary")
+    
+    ' Inicializa postos com capacidade padrão de 8h/dia (assumindo 22 dias úteis = 176h)
+    ' Se houver tabela de equipamentos, usar capacidade real
+    Dim capPadrao As Double
+    capPadrao = 176 ' 8h * 22 dias
+    
+    ' Carrega OPs da simulação
+    Set ws = ThisWorkbook.Worksheets("BD_OPsSimulacao")
+    Set tbl = ws.ListObjects("TabelaOPsSimulacao")
+    
+    dados = tbl.Range.Value
+    totalLinhas = UBound(dados, 1)
+    
+    ' Inicializa todos os postos com capacidade padrão
+    For i = 2 To totalLinhas
+        If Trim(CStr(dados(i, 1))) = Trim(pID_Simulacao) Then
+            nomePosto = Trim(CStr(dados(i, 5)))
+            If nomePosto <> "" Then
+                If Not capacidade.Exists(nomePosto) Then
+                    capacidade.Add nomePosto, Array(capPadrao, 0) ' (disponivel, planejado)
+                End If
+            End If
+        End If
+    Next i
+    
+    ' Calcula horas planejadas
+    For i = 2 To totalLinhas
+        If Trim(CStr(dados(i, 1))) = Trim(pID_Simulacao) Then
+            nomePosto = Trim(CStr(dados(i, 5)))
+            If nomePosto <> "" And capacidade.Exists(nomePosto) Then
+                horasPlanejadas = capacidade(nomePosto)(1) + CDbl(dados(i, 9))
+                capacidade(nomePosto) = Array(capacidade(nomePosto)(0), horasPlanejadas)
+            End If
+        End If
+    Next i
+    
+    Set CalcularCapacidadePorPosto = capacidade
+    
+Sair:
+    Exit Function
+    
+ErroCapacidade:
+    Set CalcularCapacidadePorPosto = Nothing
+    Resume Sair
+End Function
+
+'--------------------------------------------------------------------------------
+' FUNÇÃO: ObterIndicadoresSimulacao
+' PROPÓSITO: Calcular indicadores gerais da simulação
+' PARÂMETROS: pID_Simulacao As String
+' RETORNO: Array com (totalOPs, horasPlanejadas, horasDisponiveis, ocupacao, conflitos, postosSobrecarga, atrasadas)
+'--------------------------------------------------------------------------------
+Public Function ObterIndicadoresSimulacao(pID_Simulacao As String) As Variant
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim dados As Variant
+    Dim i As Long, totalLinhas As Long
+    Dim totalOPs As Long
+    Dim horasPlanejadas As Double
+    Dim horasDisponiveis As Double
+    Dim ocupacao As Double
+    Dim conflitos As Collection
+    Dim postosSobrecarga As Long
+    Dim atrasadas As Long
+    
+    On Error GoTo ErroIndicadores
+    
+    ' Carrega OPs da simulação
+    Set ws = ThisWorkbook.Worksheets("BD_OPsSimulacao")
+    Set tbl = ws.ListObjects("TabelaOPsSimulacao")
+    
+    dados = tbl.Range.Value
+    totalLinhas = UBound(dados, 1)
+    
+    totalOPs = 0
+    horasPlanejadas = 0
+    atrasadas = 0
+    
+    For i = 2 To totalLinhas
+        If Trim(CStr(dados(i, 1))) = Trim(pID_Simulacao) Then
+            totalOPs = totalOPs + 1
+            horasPlanejadas = horasPlanejadas + CDbl(dados(i, 9))
+            If Trim(CStr(dados(i, 10))) = "Atrasado" Then
+                atrasadas = atrasadas + 1
+            End If
+        End If
+    Next i
+    
+    ' Calcula capacidade
+    Dim capacidade As Object
+    Set capacidade = CalcularCapacidadePorPosto(pID_Simulacao)
+    
+    horasDisponiveis = 0
+    postosSobrecarga = 0
+    
+    If Not capacidade Is Nothing Then
+        Dim chave As Variant
+        For Each chave In capacidade.Keys
+            horasDisponiveis = horasDisponiveis + capacidade(chave)(0)
+            If capacidade(chave)(1) > capacidade(chave)(0) Then
+                postosSobrecarga = postosSobrecarga + 1
+            End If
+        Next chave
+    End If
+    
+    If horasDisponiveis > 0 Then
+        ocupacao = (horasPlanejadas / horasDisponiveis) * 100
+    Else
+        ocupacao = 0
+    End If
+    
+    ' Detecta conflitos
+    Dim colOPs As New Collection
+    Dim op As clsCardProducao
+    Dim j As Long
+    
+    For i = 2 To totalLinhas
+        If Trim(CStr(dados(i, 1))) = Trim(pID_Simulacao) Then
+            Set op = New clsCardProducao
+            With op
+                .ID_OP = CStr(dados(i, 2))
+                .Produto = CStr(dados(i, 4))
+                .Equipamento = CStr(dados(i, 5))
+                .Quantidade = CLng(dados(i, 6))
+                If IsDate(dados(i, 7)) Then .DataInicio = CDate(dados(i, 7))
+                If IsDate(dados(i, 8)) Then .DataFim = CDate(dados(i, 8))
+                .Duracao = CDbl(dados(i, 9))
+                .Status = CStr(dados(i, 10))
+            End With
+            colOPs.Add op
+        End If
+    Next i
+    
+    Dim colPostos As New Collection
+    Dim nomePosto As String
+    Dim existePosto As Boolean
+    
+    For i = 1 To colOPs.Count
+        nomePosto = Trim(colOPs(i).Equipamento)
+        If nomePosto <> "" Then
+            existePosto = False
+            For j = 1 To colPostos.Count
+                If colPostos(j) = nomePosto Then
+                    existePosto = True
+                    Exit For
+                End If
+            Next j
+            If Not existePosto Then
+                colPostos.Add nomePosto
+            End If
+        End If
+    Next i
+    
+    Set conflitos = DetectarConflitos(colOPs, colPostos)
+    
+    ObterIndicadoresSimulacao = Array(totalOPs, horasPlanejadas, horasDisponiveis, ocupacao, conflitos.Count, postosSobrecarga, atrasadas)
+    
+Sair:
+    Exit Function
+    
+ErroIndicadores:
+    ObterIndicadoresSimulacao = Array(0, 0, 0, 0, 0, 0, 0)
+    Resume Sair
+End Sub

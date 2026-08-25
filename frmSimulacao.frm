@@ -59,6 +59,12 @@ Private m_ID_SimulacaoAtiva As String
 Private m_DataInicioPeriodo As Date
 Private m_DataFimPeriodo As Date
 Private m_Zoom As Double
+Private m_DragCard As MSForms.Label
+Private m_DragStartX As Single
+Private m_DragStartY As Single
+Private m_DragOriginalLeft As Single
+Private m_DragOriginalTop As Single
+Private m_DragOPIndex As Long
 
 '=== PROPRIEDADES VISUAIS ======================================================
 Private Const COR_FUNDO As Long = 14211288
@@ -116,13 +122,28 @@ Private Sub CriarControles()
         .TextAlign = fmTextAlignCenter
     End With
     
+    '--- Indicadores gerais ----------------------------------------------------
+    Dim lblIndicadores As MSForms.Label
+    Set lblIndicadores = Me.Controls.Add("Forms.Label.1", "lblIndicadores", True)
+    With lblIndicadores
+        .Caption = "OPs: 0 | Horas: 0h | Ocupação: 0% | Conflitos: 0"
+        .Left = 12
+        .Top = 52
+        .Width = 860
+        .Height = 18
+        .Font.Size = 9
+        .ForeColor = COR_TEXTO_ESCURO
+        .BackColor = COR_FUNDO
+        .TextAlign = fmTextAlignLeft
+    End With
+    
     '--- Lista de simulações ---------------------------------------------------
     Set lstSimulacoes = Me.Controls.Add("Forms.ListBox.1", "lstSimulacoes", True)
     With lstSimulacoes
         .Left = 12
-        .Top = 60
+        .Top = 78
         .Width = 400
-        .Height = 300
+        .Height = 260
         .Font.Size = 10
         .BorderStyle = fmBorderStyleSingle
     End With
@@ -135,7 +156,7 @@ Private Sub CriarControles()
     With btnNovaSimulacao
         .Caption = "Nova Simulação"
         .Left = btnLeft
-        .Top = 380
+        .Top = 348
         .Width = 120
         .Height = 30
         .Font.Size = 10
@@ -149,7 +170,7 @@ Private Sub CriarControles()
     With btnAbrirSimulacao
         .Caption = "Abrir"
         .Left = btnLeft
-        .Top = 380
+        .Top = 348
         .Width = 100
         .Height = 30
         .Font.Size = 10
@@ -163,7 +184,7 @@ Private Sub CriarControles()
     With btnImportarOPs
         .Caption = "Importar OPs"
         .Left = btnLeft
-        .Top = 380
+        .Top = 348
         .Width = 120
         .Height = 30
         .Font.Size = 10
@@ -177,7 +198,7 @@ Private Sub CriarControles()
     With btnExcluirSimulacao
         .Caption = "Excluir"
         .Left = btnLeft
-        .Top = 380
+        .Top = 348
         .Width = 100
         .Height = 30
         .Font.Size = 10
@@ -189,10 +210,10 @@ Private Sub CriarControles()
     '--- Filtro de período ------------------------------------------------------
     Set lblPeriodo = Me.Controls.Add("Forms.Label.1", "lblPeriodo", True)
     With lblPeriodo
-        .Caption = "Período da simulação:"
+        .Caption = "Período:"
         .Left = 12
-        .Top = 430
-        .Width = 120
+        .Top = 398
+        .Width = 50
         .Height = 22
         .Font.Size = 9
         .ForeColor = COR_TEXTO_ESCURO
@@ -203,8 +224,8 @@ Private Sub CriarControles()
     Set txtDataInicial = Me.Controls.Add("Forms.TextBox.1", "txtDataInicial", True)
     With txtDataInicial
         .Text = Format(m_DataInicioPeriodo, "dd/mm/yyyy")
-        .Left = 140
-        .Top = 430
+        .Left = 68
+        .Top = 398
         .Width = 90
         .Height = 22
         .Font.Size = 9
@@ -213,8 +234,8 @@ Private Sub CriarControles()
     Set txtDataFinal = Me.Controls.Add("Forms.TextBox.1", "txtDataFinal", True)
     With txtDataFinal
         .Text = Format(m_DataFimPeriodo, "dd/mm/yyyy")
-        .Left = 240
-        .Top = 430
+        .Left = 165
+        .Top = 398
         .Width = 90
         .Height = 22
         .Font.Size = 9
@@ -223,13 +244,71 @@ Private Sub CriarControles()
     Set cmdAplicarPeriodo = Me.Controls.Add("Forms.CommandButton.1", "cmdAplicarPeriodo", True)
     With cmdAplicarPeriodo
         .Caption = "Aplicar"
-        .Left = 340
-        .Top = 430
+        .Left = 262
+        .Top = 398
         .Width = 70
         .Height = 22
         .Font.Size = 9
         .BackColor = COR_AZUL
         .ForeColor = COR_TEXTO_CLARO
+    End With
+    
+    '--- Filtros ---------------------------------------------------------------
+    Dim lblFiltroStatus As MSForms.Label
+    Set lblFiltroStatus = Me.Controls.Add("Forms.Label.1", "lblFiltroStatus", True)
+    With lblFiltroStatus
+        .Caption = "Status:"
+        .Left = 12
+        .Top = 428
+        .Width = 50
+        .Height = 22
+        .Font.Size = 9
+        .ForeColor = COR_TEXTO_ESCURO
+        .BackColor = COR_FUNDO
+        .TextAlign = fmTextAlignRight
+    End With
+    
+    Dim cboFiltroStatus As MSForms.ComboBox
+    Set cboFiltroStatus = Me.Controls.Add("Forms.ComboBox.1", "cboFiltroStatus", True)
+    With cboFiltroStatus
+        .AddItem "Todos"
+        .AddItem "Planejada"
+        .AddItem "Em Andamento"
+        .AddItem "Concluído"
+        .AddItem "Atrasado"
+        .Value = "Todos"
+        .Left = 68
+        .Top = 428
+        .Width = 100
+        .Height = 22
+        .Font.Size = 9
+        .Style = fmStyleDropDownList
+    End With
+    
+    Dim lblBusca As MSForms.Label
+    Set lblBusca = Me.Controls.Add("Forms.Label.1", "lblBusca", True)
+    With lblBusca
+        .Caption = "Buscar:"
+        .Left = 180
+        .Top = 428
+        .Width = 50
+        .Height = 22
+        .Font.Size = 9
+        .ForeColor = COR_TEXTO_ESCURO
+        .BackColor = COR_FUNDO
+        .TextAlign = fmTextAlignRight
+    End With
+    
+    Dim txtBusca As MSForms.TextBox
+    Set txtBusca = Me.Controls.Add("Forms.TextBox.1", "txtBusca", True)
+    With txtBusca
+        .Text = ""
+        .Left = 235
+        .Top = 428
+        .Width = 100
+        .Height = 22
+        .Font.Size = 9
+        .PlaceholderText = "ID ou Produto"
     End With
     
     '--- Área de visualização do planejamento -----------------------------------
@@ -906,6 +985,152 @@ Private Sub hScrollSimulacao_Change()
     Dim offsetX As Single
     offsetX = -hScrollSimulacao.Value
     fraVisualizacao.Left = 430 + offsetX
+End Sub
+
+Private Sub UserForm_MouseDown(ByVal Button As Integer, ByVal Shift As Integer, ByVal X As Single, ByVal Y As Single)
+    On Error Resume Next
+    
+    If fraVisualizacao Is Nothing Then Exit Sub
+    
+    Dim ctrl As MSForms.Control
+    Dim relX As Single
+    Dim relY As Single
+    
+    relX = X - fraVisualizacao.Left
+    relY = Y - fraVisualizacao.Top
+    
+    For Each ctrl In fraVisualizacao.Controls
+        If TypeOf ctrl Is MSForms.Label Then
+            If ctrl.Tag <> "" Then
+                If relX >= ctrl.Left And relX <= ctrl.Left + ctrl.Width And _
+                   relY >= ctrl.Top And relY <= ctrl.Top + ctrl.Height Then
+                    If Button = 1 Then
+                        Set m_DragCard = ctrl
+                        m_DragStartX = X
+                        m_DragStartY = Y
+                        m_DragOriginalLeft = ctrl.Left
+                        m_DragOriginalTop = ctrl.Top
+                        m_DragOPIndex = 0
+                    ElseIf Button = 2 Then
+                        frmDetalheOP.CarregarDetalhesSimulacao ctrl.Tag, m_ID_SimulacaoAtiva
+                        frmDetalheOP.Show vbModal
+                        Call CarregarPlanejamentoSimulacao
+                    End If
+                    Exit Sub
+                End If
+            End If
+        End If
+    Next ctrl
+End Sub
+
+Private Sub UserForm_MouseMove(ByVal Button As Integer, ByVal Shift As Integer, ByVal X As Single, ByVal Y As Single)
+    On Error Resume Next
+    
+    If Not m_DragCard Is Nothing And Button = 1 Then
+        Dim deltaX As Single
+        Dim deltaY As Single
+        deltaX = X - m_DragStartX
+        deltaY = Y - m_DragStartY
+        
+        m_DragCard.Left = m_DragOriginalLeft + deltaX
+        m_DragCard.Top = m_DragOriginalTop + deltaY
+    End If
+End Sub
+
+Private Sub UserForm_MouseUp(ByVal Button As Integer, ByVal Shift As Integer, ByVal X As Single, ByVal Y As Single)
+    On Error GoTo ErroMouseUp
+    
+    If m_DragCard Is Nothing Then Exit Sub
+    
+    Dim deltaX As Single
+    Dim deltaY As Single
+    deltaX = X - m_DragStartX
+    deltaY = Y - m_DragStartY
+    
+    If Abs(deltaX) < 5 And Abs(deltaY) < 5 Then
+        Set m_DragCard = Nothing
+        Exit Sub
+    End If
+    
+    Dim novoInicio As Date
+    Dim novoFim As Date
+    Dim novaDuracao As Double
+    Dim indicePosto As Long
+    
+    ' Encontra o OP correspondente ao card
+    Dim dados() As Variant
+    dados = ObterOPsSimulacaoEmArray(m_ID_SimulacaoAtiva)
+    
+    If IsError(dados) Then
+        Set m_DragCard = Nothing
+        Exit Sub
+    End If
+    
+    Dim i As Long
+    Dim totalLinhas As Long
+    totalLinhas = UBound(dados, 1)
+    
+    Dim idOP As String
+    idOP = m_DragCard.Tag
+    
+    For i = 1 To totalLinhas
+        If CStr(dados(i, 2)) = idOP And CStr(dados(i, 1)) = m_ID_SimulacaoAtiva Then
+            Dim dataInicioOP As Date
+            Dim dataFimOP As Date
+            Dim duracaoOP As Double
+            
+            If IsDate(dados(i, 7)) Then dataInicioOP = CDate(dados(i, 7))
+            If IsDate(dados(i, 8)) Then dataFimOP = CDate(dados(i, 8))
+            duracaoOP = CDbl(dados(i, 9))
+            
+            ' Calcula novo horário baseado no movimento horizontal
+            novaDuracao = duracaoOP
+            novoInicio = dataInicioOP + (deltaX / 100) / 24
+            novoFim = dataFimOP + (deltaX / 100) / 24
+            
+            ' Atualiza Data_Inicio e Data_Fim
+            Call AtualizarOPSimulacao(m_ID_SimulacaoAtiva, idOP, CStr(dados(i, 4)), CStr(dados(i, 5)), CLng(dados(i, 6)), novoInicio, novoFim, novaDuracao, CStr(dados(i, 10)), CStr(dados(i, 11)), CStr(dados(i, 12)))
+            
+            Exit For
+        End If
+    Next i
+    
+    Set m_DragCard = Nothing
+    Call CarregarPlanejamentoSimulacao
+    
+Sair:
+    Exit Sub
+    
+ErroMouseUp:
+    Set m_DragCard = Nothing
+    Resume Sair
+End Sub
+
+Private Sub UserForm_MouseDown(ByVal Button As Integer, ByVal Shift As Integer, ByVal X As Single, ByVal Y As Single)
+    On Error Resume Next
+    
+    If fraVisualizacao Is Nothing Then Exit Sub
+    
+    Dim ctrl As MSForms.Control
+    Dim relX As Single
+    Dim relY As Single
+    
+    relX = X - fraVisualizacao.Left
+    relY = Y - fraVisualizacao.Top
+    
+    For Each ctrl In fraVisualizacao.Controls
+        If TypeOf ctrl Is MSForms.Label Then
+            If ctrl.Tag <> "" Then
+                If relX >= ctrl.Left And relX <= ctrl.Left + ctrl.Width And _
+                   relY >= ctrl.Top And relY <= ctrl.Top + ctrl.Height Then
+                    frmDetalheOP.CarregarDetalhesSimulacao ctrl.Tag, m_ID_SimulacaoAtiva
+                    frmDetalheOP.Show vbModal
+                    Call CarregarPlanejamentoSimulacao
+                    Exit Sub
+                End If
+            End If
+        End If
+    Next ctrl
 End Sub
 
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
