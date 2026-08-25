@@ -38,6 +38,7 @@ Option Explicit
 Private m_ID_OP As String
 Private btnEditar As MSForms.CommandButton
 Private btnExcluir As MSForms.CommandButton
+Private btnDuplicar As MSForms.CommandButton
 
 Private Sub UserForm_Initialize()
     On Error GoTo ErroInicializacao
@@ -69,6 +70,19 @@ Private Sub UserForm_Initialize()
         .Font.Bold = True
         .BackColor = 255
         .ForeColor = 16777215
+    End With
+    
+    Set btnDuplicar = Me.Controls.Add("Forms.CommandButton.1", "btnDuplicar", True)
+    With btnDuplicar
+        .Caption = "Duplicar"
+        .Left = 340
+        .Top = 340
+        .Width = 120
+        .Height = 30
+        .Font.Size = 10
+        .Font.Bold = True
+        .BackColor = 65535
+        .ForeColor = 0
     End With
     
 Sair:
@@ -148,6 +162,55 @@ Sair:
     
 ErroExcluir:
     MsgBox "Erro ao excluir OP: " & Err.Description, vbCritical, "APS PURAN"
+    Resume Sair
+End Sub
+
+Private Sub btnDuplicar_Click()
+    On Error GoTo ErroDuplicar
+    
+    Dim dados() As Variant
+    dados = ObterDadosOPsEmArray()
+    
+    If IsError(dados) Then Exit Sub
+    
+    Dim i As Long
+    Dim totalLinhas As Long
+    totalLinhas = UBound(dados, 1)
+    
+    Dim idOP As String
+    Dim produto As String
+    Dim equipamento As String
+    Dim quantidade As Long
+    Dim dataInicio As Date
+    Dim dataFim As Date
+    Dim duracao As Double
+    Dim status As String
+    
+    For i = 2 To totalLinhas
+        If CStr(dados(i, 1)) = m_ID_OP Then
+            idOP = "Copia_" & CStr(dados(i, 1))
+            produto = CStr(dados(i, 2))
+            equipamento = CStr(dados(i, 3))
+            quantidade = CLng(dados(i, 4))
+            dataInicio = CDate(dados(i, 5))
+            dataFim = CDate(dados(i, 6))
+            duracao = CDbl(dados(i, 7))
+            status = CStr(dados(i, 8))
+            Exit For
+        End If
+    Next i
+    
+    If idOP = "" Then Exit Sub
+    
+    frmCadastroOP.CarregarParaCopia idOP, produto, equipamento, quantidade, dataInicio, dataFim, status
+    frmCadastroOP.Show vbModal
+    Unload Me
+    
+Sair:
+    Exit Sub
+    
+ErroDuplicar:
+    MsgBox "Erro ao duplicar OP: " & Err.Description, vbCritical, "APS PURAN"
     Resume Sair
 End Sub
 

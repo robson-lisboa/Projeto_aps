@@ -228,6 +228,35 @@ ErroCarregarEdicao:
 End Sub
 
 '================================================================================
+' SUBROTINA PÚBLICA: CarregarParaCopia
+' PROPÓSITO: Carregar dados de uma OP para duplicação com novo ID
+' PARÂMETROS: pNovoID, pProduto, pEquipamento, pQtd, pInicio, pFim, pStatus
+'================================================================================
+Public Sub CarregarParaCopia(pNovoID As String, pProduto As String, pEquipamento As String, _
+                             pQtd As Long, pInicio As Date, pFim As Date, pStatus As String)
+    On Error GoTo ErroCarregarCopia
+    
+    m_EditandoID = ""
+    Me.Caption = "APS PURAN – Duplicar Ordem de Produção"
+    
+    Me.Controls("txtID_OP").Enabled = True
+    Me.Controls("txtID_OP").Value = pNovoID
+    Me.Controls("txtProduto").Value = pProduto
+    Me.Controls("cboEquipamento").Value = pEquipamento
+    Me.Controls("txtQuantidade").Value = CStr(pQtd)
+    Me.Controls("txtData_Inicio").Value = Format(pInicio, "dd/mm/yyyy")
+    Me.Controls("txtData_Fim").Value = Format(pFim, "dd/mm/yyyy")
+    Me.Controls("cboStatus").Value = pStatus
+    
+Sair:
+    Exit Sub
+    
+ErroCarregarCopia:
+    MsgBox "Erro ao carregar OP para cópia: " & Err.Description, vbCritical, "APS PURAN"
+    Resume Sair
+End Sub
+
+'================================================================================
 ' EVENTO: btnSalvar_Click
 ' PROPÓSITO: Validar campos e persistir nova OP via modEngine
 '================================================================================
