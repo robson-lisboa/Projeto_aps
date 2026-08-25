@@ -378,3 +378,386 @@ ErroExcluirTabela:
     MsgBox "Erro ao excluir registro: " & Err.Description, vbCritical, "APS PURAN - Engine"
     Resume Sair
 End Sub
+
+'--------------------------------------------------------------------------------
+' FUNÇÃO: ObterDadosSimulacaoEmArray
+' PROPÓSITO: Ler todas as simulações para memória
+' RETORNO: Variant Array (1-based)
+'--------------------------------------------------------------------------------
+Public Function ObterDadosSimulacaoEmArray() As Variant
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim dados As Variant
+    
+    On Error GoTo ErroObterSimulacoes
+    
+    Set ws = ThisWorkbook.Worksheets("BD_Simulacoes")
+    Set tbl = ws.ListObjects("TabelaSimulacoes")
+    
+    dados = tbl.Range.Value
+    ObterDadosSimulacaoEmArray = dados
+    
+Sair:
+    Exit Function
+    
+ErroObterSimulacoes:
+    ObterDadosSimulacaoEmArray = CVErr(xlErrRef)
+    Resume Sair
+End Function
+
+'--------------------------------------------------------------------------------
+' FUNÇÃO: ObterOPsSimulacaoEmArray
+' PROPÓSITO: Ler todas as OPs de uma simulação para memória
+' PARÂMETROS: pID_Simulacao As String
+' RETORNO: Variant Array (1-based)
+'--------------------------------------------------------------------------------
+Public Function ObterOPsSimulacaoEmArray(pID_Simulacao As String) As Variant
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim dados As Variant
+    Dim i As Long, totalLinhas As Long
+    Dim resultados() As Variant
+    Dim contResultado As Long
+    
+    On Error GoTo ErroObterOPsSimulacao
+    
+    Set ws = ThisWorkbook.Worksheets("BD_OPsSimulacao")
+    Set tbl = ws.ListObjects("TabelaOPsSimulacao")
+    
+    dados = tbl.Range.Value
+    totalLinhas = UBound(dados, 1)
+    
+    ReDim resultados(1 To totalLinhas, 1 To 12)
+    contResultado = 0
+    
+    For i = 2 To totalLinhas
+        If Trim(CStr(dados(i, 1))) = Trim(pID_Simulacao) Then
+            contResultado = contResultado + 1
+            Dim j As Long
+            For j = 1 To 12
+                resultados(contResultado, j) = dados(i, j)
+            Next j
+        End If
+    Next i
+    
+    If contResultado = 0 Then
+        ObterOPsSimulacaoEmArray = CVErr(xlErrRef)
+    Else
+        ReDim Preserve resultados(1 To contResultado, 1 To 12)
+        ObterOPsSimulacaoEmArray = resultados
+    End If
+    
+Sair:
+    Exit Function
+    
+ErroObterOPsSimulacao:
+    ObterOPsSimulacaoEmArray = CVErr(xlErrRef)
+    Resume Sair
+End Function
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: SalvarSimulacao
+' PROPÓSITO: Inserir nova simulação
+' PARÂMETROS: Dados da simulação
+'--------------------------------------------------------------------------------
+Public Sub SalvarSimulacao(pID As String, pNome As String, pDataCriacao As Date, _
+                           pDataInicio As Date, pDataFim As Date, pStatus As String, pObs As String)
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim novaLinha As ListRow
+    
+    On Error GoTo ErroSalvarSimulacao
+    
+    Set ws = ThisWorkbook.Worksheets("BD_Simulacoes")
+    Set tbl = ws.ListObjects("TabelaSimulacoes")
+    
+    Application.ScreenUpdating = False
+    
+    Set novaLinha = tbl.ListRows.Add
+    
+    With novaLinha.Range
+        .Cells(1, tbl.ListColumns("ID_Simulacao").Index).Value = pID
+        .Cells(1, tbl.ListColumns("Nome_Simulacao").Index).Value = pNome
+        .Cells(1, tbl.ListColumns("Data_Criacao").Index).Value = pDataCriacao
+        .Cells(1, tbl.ListColumns("Data_Inicio").Index).Value = pDataInicio
+        .Cells(1, tbl.ListColumns("Data_Fim").Index).Value = pDataFim
+        .Cells(1, tbl.ListColumns("Status").Index).Value = pStatus
+        .Cells(1, tbl.ListColumns("Observacao").Index).Value = pObs
+    End With
+    
+Sair:
+    Application.ScreenUpdating = True
+    Exit Sub
+    
+ErroSalvarSimulacao:
+    MsgBox "Erro ao salvar simulação: " & Err.Description, vbCritical, "APS PURAN - Engine"
+    Resume Sair
+End Sub
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: SalvarOPSimulacao
+' PROPÓSITO: Inserir nova OP na simulação
+'--------------------------------------------------------------------------------
+Public Sub SalvarOPSimulacao(pID_Simulacao As String, pID_OP_Simulacao As String, pID_OP_Origem As String, _
+                             pProduto As String, pEquipamento As String, pQtd As Long, _
+                             pInicio As Date, pFim As Date, pDuracao As Double, _
+                             pStatus As String, pPrioridade As String, pObs As String)
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim novaLinha As ListRow
+    
+    On Error GoTo ErroSalvarOPSimulacao
+    
+    Set ws = ThisWorkbook.Worksheets("BD_OPsSimulacao")
+    Set tbl = ws.ListObjects("TabelaOPsSimulacao")
+    
+    Application.ScreenUpdating = False
+    
+    Set novaLinha = tbl.ListRows.Add
+    
+    With novaLinha.Range
+        .Cells(1, tbl.ListColumns("ID_Simulacao").Index).Value = pID_Simulacao
+        .Cells(1, tbl.ListColumns("ID_OP_Simulacao").Index).Value = pID_OP_Simulacao
+        .Cells(1, tbl.ListColumns("ID_OP_Origem").Index).Value = pID_OP_Origem
+        .Cells(1, tbl.ListColumns("Produto").Index).Value = pProduto
+        .Cells(1, tbl.ListColumns("Equipamento").Index).Value = pEquipamento
+        .Cells(1, tbl.ListColumns("Quantidade").Index).Value = pQtd
+        .Cells(1, tbl.ListColumns("Data_Inicio").Index).Value = pInicio
+        .Cells(1, tbl.ListColumns("Data_Fim").Index).Value = pFim
+        .Cells(1, tbl.ListColumns("Duracao_Horas").Index).Value = pDuracao
+        .Cells(1, tbl.ListColumns("Status").Index).Value = pStatus
+        .Cells(1, tbl.ListColumns("Prioridade").Index).Value = pPrioridade
+        .Cells(1, tbl.ListColumns("Observacao").Index).Value = pObs
+    End With
+    
+Sair:
+    Application.ScreenUpdating = True
+    Exit Sub
+    
+ErroSalvarOPSimulacao:
+    MsgBox "Erro ao salvar OP da simulação: " & Err.Description, vbCritical, "APS PURAN - Engine"
+    Resume Sair
+End Sub
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: AtualizarOPSimulacao
+' PROPÓSITO: Atualizar OP existente na simulação
+'--------------------------------------------------------------------------------
+Public Sub AtualizarOPSimulacao(pID_Simulacao As String, pID_OP_Simulacao As String, _
+                                pProduto As String, pEquipamento As String, pQtd As Long, _
+                                pInicio As Date, pFim As Date, pDuracao As Double, _
+                                pStatus As String, pPrioridade As String, pObs As String)
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim dados As Variant
+    Dim i As Long, totalLinhas As Long
+    Dim linhaEncontrada As Long
+    
+    On Error GoTo ErroAtualizarOPSimulacao
+    
+    Set ws = ThisWorkbook.Worksheets("BD_OPsSimulacao")
+    Set tbl = ws.ListObjects("TabelaOPsSimulacao")
+    
+    Application.ScreenUpdating = False
+    
+    dados = tbl.Range.Value
+    totalLinhas = UBound(dados, 1)
+    linhaEncontrada = 0
+    
+    For i = 2 To totalLinhas
+        If Trim(CStr(dados(i, 1))) = Trim(pID_Simulacao) And _
+           Trim(CStr(dados(i, 2))) = Trim(pID_OP_Simulacao) Then
+            linhaEncontrada = i
+            Exit For
+        End If
+    Next i
+    
+    If linhaEncontrada = 0 Then
+        Err.Raise vbObjectError + 300, "AtualizarOPSimulacao", "OP da simulação não encontrada."
+    End If
+    
+    With tbl.ListRows(linhaEncontrada - 1).Range
+        .Cells(1, tbl.ListColumns("Produto").Index).Value = pProduto
+        .Cells(1, tbl.ListColumns("Equipamento").Index).Value = pEquipamento
+        .Cells(1, tbl.ListColumns("Quantidade").Index).Value = pQtd
+        .Cells(1, tbl.ListColumns("Data_Inicio").Index).Value = pInicio
+        .Cells(1, tbl.ListColumns("Data_Fim").Index).Value = pFim
+        .Cells(1, tbl.ListColumns("Duracao_Horas").Index).Value = pDuracao
+        .Cells(1, tbl.ListColumns("Status").Index).Value = pStatus
+        .Cells(1, tbl.ListColumns("Prioridade").Index).Value = pPrioridade
+        .Cells(1, tbl.ListColumns("Observacao").Index).Value = pObs
+    End With
+    
+Sair:
+    Application.ScreenUpdating = True
+    Exit Sub
+    
+ErroAtualizarOPSimulacao:
+    MsgBox "Erro ao atualizar OP da simulação: " & Err.Description, vbCritical, "APS PURAN - Engine"
+    Resume Sair
+End Sub
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: ExcluirOPSimulacao
+' PROPÓSITO: Excluir OP da simulação
+'--------------------------------------------------------------------------------
+Public Sub ExcluirOPSimulacao(pID_Simulacao As String, pID_OP_Simulacao As String)
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim dados As Variant
+    Dim i As Long, totalLinhas As Long
+    Dim linhaEncontrada As Long
+    
+    On Error GoTo ErroExcluirOPSimulacao
+    
+    Set ws = ThisWorkbook.Worksheets("BD_OPsSimulacao")
+    Set tbl = ws.ListObjects("TabelaOPsSimulacao")
+    
+    Application.ScreenUpdating = False
+    
+    dados = tbl.Range.Value
+    totalLinhas = UBound(dados, 1)
+    linhaEncontrada = 0
+    
+    For i = 2 To totalLinhas
+        If Trim(CStr(dados(i, 1))) = Trim(pID_Simulacao) And _
+           Trim(CStr(dados(i, 2))) = Trim(pID_OP_Simulacao) Then
+            linhaEncontrada = i
+            Exit For
+        End If
+    Next i
+    
+    If linhaEncontrada = 0 Then
+        Err.Raise vbObjectError + 301, "ExcluirOPSimulacao", "OP da simulação não encontrada."
+    End If
+    
+    tbl.ListRows(linhaEncontrada - 1).Delete
+    
+Sair:
+    Application.ScreenUpdating = True
+    Exit Sub
+    
+ErroExcluirOPSimulacao:
+    MsgBox "Erro ao excluir OP da simulação: " & Err.Description, vbCritical, "APS PURAN - Engine"
+    Resume Sair
+End Sub
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: ExcluirSimulacao
+' PROPÓSITO: Excluir simulação e todas as suas OPs
+'--------------------------------------------------------------------------------
+Public Sub ExcluirSimulacao(pID_Simulacao As String)
+    Dim wsSim As Worksheet
+    Dim wsOPs As Worksheet
+    Dim tblSim As ListObject
+    Dim tblOPs As ListObject
+    Dim dadosSim As Variant
+    Dim dadosOPs As Variant
+    Dim i As Long, totalLinhasSim As Long
+    Dim totalLinhasOPs As Long
+    
+    On Error GoTo ErroExcluirSimulacao
+    
+    Set wsSim = ThisWorkbook.Worksheets("BD_Simulacoes")
+    Set wsOPs = ThisWorkbook.Worksheets("BD_OPsSimulacao")
+    Set tblSim = wsSim.ListObjects("TabelaSimulacoes")
+    Set tblOPs = wsOPs.ListObjects("TabelaOPsSimulacao")
+    
+    Application.ScreenUpdating = False
+    
+    dadosSim = tblSim.Range.Value
+    totalLinhasSim = UBound(dadosSim, 1)
+    
+    ' Exclui a simulação (da última para a primeira para não desalinhar índices)
+    For i = totalLinhasSim To 2 Step -1
+        If Trim(CStr(dadosSim(i, 1))) = Trim(pID_Simulacao) Then
+            tblSim.ListRows(i - 1).Delete
+            Exit For
+        End If
+    Next i
+    
+    ' Exclui todas as OPs da simulação
+    dadosOPs = tblOPs.Range.Value
+    totalLinhasOPs = UBound(dadosOPs, 1)
+    
+    For i = totalLinhasOPs To 2 Step -1
+        If Trim(CStr(dadosOPs(i, 1))) = Trim(pID_Simulacao) Then
+            tblOPs.ListRows(i - 1).Delete
+        End If
+    Next i
+    
+Sair:
+    Application.ScreenUpdating = True
+    Exit Sub
+    
+ErroExcluirSimulacao:
+    MsgBox "Erro ao excluir simulação: " & Err.Description, vbCritical, "APS PURAN - Engine"
+    Resume Sair
+End Sub
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: ImportarOPsParaSimulacao
+' PROPÓSITO: Copiar OPs do planejamento para uma simulação
+' PARÂMETROS: pID_Simulacao, pDataInicio (filtro opcional), pDataFim (filtro opcional)
+'--------------------------------------------------------------------------------
+Public Sub ImportarOPsParaSimulacao(pID_Simulacao As String, _
+                                    Optional pDataInicio As Date = 0, _
+                                    Optional pDataFim As Date = 0)
+    Dim wsOPs As Worksheet
+    Dim tblOPs As ListObject
+    Dim dados As Variant
+    Dim i As Long, totalLinhas As Long
+    
+    On Error GoTo ErroImportar
+    
+    Set wsOPs = ThisWorkbook.Worksheets("BD_OPs")
+    Set tblOPs = wsOPs.ListObjects("TabelaOPs")
+    
+    Application.ScreenUpdating = False
+    
+    dados = tblOPs.Range.Value
+    totalLinhas = UBound(dados, 1)
+    
+    Dim idSimulacao As String
+    Dim idOPSimulacao As String
+    Dim contador As Long
+    contador = 0
+    
+    For i = 2 To totalLinhas
+        Dim dataInicioOP As Date
+        Dim dataFimOP As Date
+        
+        If IsDate(dados(i, 5)) Then dataInicioOP = CDate(dados(i, 5))
+        If IsDate(dados(i, 6)) Then dataFimOP = CDate(dados(i, 6))
+        
+        ' Aplica filtros de data se fornecidos
+        If pDataInicio <> 0 And dataInicioOP < pDataInicio Then GoTo ProximaOP
+        If pDataFim <> 0 And dataFimOP > pDataFim Then GoTo ProximaOP
+        
+        contador = contador + 1
+        idOPSimulacao = pID_Simulacao & "_OP" & Format(contador, "000")
+        
+        Call SalvarOPSimulacao( _
+            pID_Simulacao, _
+            idOPSimulacao, _
+            CStr(dados(i, 1)), _
+            CStr(dados(i, 2)), _
+            CStr(dados(i, 3)), _
+            CLng(dados(i, 4)), _
+            dataInicioOP, _
+            dataFimOP, _
+            CDbl(dados(i, 7)), _
+            CStr(dados(i, 8)), _
+            "Média", _
+            "Importado do planejamento")
+ProximaOP:
+    Next i
+    
+Sair:
+    Application.ScreenUpdating = True
+    Exit Sub
+    
+ErroImportar:
+    MsgBox "Erro ao importar OPs para simulação: " & Err.Description, vbCritical, "APS PURAN - Engine"
+    Resume Sair
+End Sub
