@@ -125,6 +125,7 @@ Private lblZoom As MSForms.Label
 Private cmdAtualizar As MSForms.CommandButton
 Private cmdAdicionarOP As MSForms.CommandButton
 Private cmdSimularProducao As MSForms.CommandButton
+Private cboFiltroStatus As MSForms.ComboBox
 
 ' Labels do Dashboard (nível de módulo para permitir atualização)
 Private lblKPIPlanejadas As MSForms.Label
@@ -167,6 +168,7 @@ Private Const ESPACAMENTO As Single = 8
 Private m_DataInicioPeriodo As Date
 Private m_DataFimPeriodo As Date
 Private m_Zoom As Double
+Private m_FiltroStatus As String
 
 '================================================================================
 ' EVENTO: UserForm_Initialize
@@ -501,6 +503,24 @@ Private Sub UserForm_Initialize()
     End With
     periodoLeft = periodoLeft + 28
     
+    ' Filtro de status
+    Set cboFiltroStatus = Me.Controls.Add("Forms.ComboBox.1", "cboFiltroStatus", True)
+    With cboFiltroStatus
+        .AddItem "Todos"
+        .AddItem "Planejada"
+        .AddItem "Em Andamento"
+        .AddItem "Concluído"
+        .AddItem "Atrasado"
+        .Value = "Todos"
+        .Left = periodoLeft
+        .Top = 12
+        .Width = 100
+        .Height = 22
+        .Font.Size = 9
+        .Style = fmStyleDropDownList
+    End With
+    periodoLeft = periodoLeft + 106
+    
     ' Ações
     Set cmdAtualizar = Me.Controls.Add("Forms.CommandButton.1", "cmdAtualizar", True)
     With cmdAtualizar
@@ -682,7 +702,7 @@ Public Sub CarregarPlanejamento()
     hScrollProducao.Top = Me.ClientHeight - 96 - 20
     hScrollProducao.Width = Me.ClientWidth - 196
     
-    Call modGantt.CarregarGantt(fraProducao, hScrollProducao, m_DataInicioPeriodo, m_DataFimPeriodo, m_Zoom)
+    Call modGantt.CarregarGantt(fraProducao, hScrollProducao, m_DataInicioPeriodo, m_DataFimPeriodo, m_Zoom, m_FiltroStatus)
     
 Sair:
     Exit Sub
@@ -1123,6 +1143,11 @@ Private Sub cmdAdicionarOP_Click()
 End Sub
 
 Private Sub cmdSimularProducao_Click()
+    Call CarregarPlanejamento
+End Sub
+
+Private Sub cboFiltroStatus_Change()
+    m_FiltroStatus = cboFiltroStatus.Value
     Call CarregarPlanejamento
 End Sub
 

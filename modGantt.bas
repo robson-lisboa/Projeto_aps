@@ -208,7 +208,8 @@ End Function
 ' PARÂMETROS: pContainer As MSForms.Frame, pHScroll As MSForms.ScrollBar (opcional)
 '--------------------------------------------------------------------------------
 Public Sub CarregarGantt(pContainer As MSForms.Frame, Optional pHScroll As MSForms.ScrollBar = Nothing, _
-                         Optional pDataInicio As Date = 0, Optional pDataFim As Date = 0, Optional pZoom As Double = 1#)
+                         Optional pDataInicio As Date = 0, Optional pDataFim As Date = 0, _
+                         Optional pZoom As Double = 1#, Optional pFiltroStatus As String = "Todos")
     On Error GoTo ErroCarregarGantt
     
     Dim dados() As Variant
@@ -522,6 +523,14 @@ Public Sub CarregarGantt(pContainer As MSForms.Frame, Optional pHScroll As MSFor
     
     For i = 1 To numOPs
         Set opAtual = ops(i)
+        
+        ' Aplica filtro de status
+        If pFiltroStatus <> "Todos" Then
+            If Trim(opAtual.Status) <> Trim(pFiltroStatus) Then
+                GoTo ProximaOP
+            End If
+        End If
+        
         indicePosto = ObterIndicePosto(opAtual.Equipamento, colPostos)
         posX = ConverterDataParaX(opAtual.DataInicio, escala)
         larguraCard = CalcularLarguraCard(opAtual.DataInicio, opAtual.DataFim, escala)
@@ -670,6 +679,7 @@ Public Sub CarregarGantt(pContainer As MSForms.Frame, Optional pHScroll As MSFor
                 .TextAlign = fmTextAlignCenter
             End With
         End If
+ProximaOP:
     Next i
     
     '--- 12. Linha AGORA --------------------------------------------------------
