@@ -214,3 +214,167 @@ ErroExcluir:
            vbCritical + vbOKOnly, "APS PURAN - Engine"
     Resume Sair
 End Sub
+
+'--------------------------------------------------------------------------------
+' FUNÇÃO GENÉRICA: ObterDadosTabelaEmArray
+' PROPÓSITO: Ler qualquer tabela do banco de dados para memória
+' PARÂMETROS: pNomePlanilha As String, pNomeTabela As String
+' RETORNO: Variant Array (1-based) ou CVErr(xlErrRef) em caso de erro
+'--------------------------------------------------------------------------------
+Public Function ObterDadosTabelaEmArray(pNomePlanilha As String, pNomeTabela As String) As Variant
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim dados As Variant
+    
+    On Error GoTo ErroObterDadosTabela
+    
+    Set ws = ThisWorkbook.Worksheets(pNomePlanilha)
+    Set tbl = ws.ListObjects(pNomeTabela)
+    
+    dados = tbl.Range.Value
+    ObterDadosTabelaEmArray = dados
+    
+Sair:
+    Exit Function
+    
+ErroObterDadosTabela:
+    ObterDadosTabelaEmArray = CVErr(xlErrRef)
+    Resume Sair
+End Function
+
+'--------------------------------------------------------------------------------
+' SUBROTINA GENÉRICA: InserirLinhaTabela
+' PROPÓSITO: Inserir nova linha em qualquer tabela do banco de dados
+' PARÂMETROS: pNomePlanilha, pNomeTabela, pValores (array de valores)
+'--------------------------------------------------------------------------------
+Public Sub InserirLinhaTabela(pNomePlanilha As String, pNomeTabela As String, pValores As Variant)
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim novaLinha As ListRow
+    Dim i As Long
+    
+    On Error GoTo ErroInserir
+    
+    Set ws = ThisWorkbook.Worksheets(pNomePlanilha)
+    Set tbl = ws.ListObjects(pNomeTabela)
+    
+    Application.ScreenUpdating = False
+    
+    Set novaLinha = tbl.ListRows.Add
+    
+    With novaLinha.Range
+        For i = LBound(pValores) To UBound(pValores)
+            .Cells(1, i + 1).Value = pValores(i)
+        Next i
+    End With
+    
+Sair:
+    Application.ScreenUpdating = True
+    Exit Sub
+    
+ErroInserir:
+    MsgBox "Erro ao inserir registro: " & Err.Description, vbCritical, "APS PURAN - Engine"
+    Resume Sair
+End Sub
+
+'--------------------------------------------------------------------------------
+' SUBROTINA GENÉRICA: AtualizarLinhaTabela
+' PROPÓSITO: Atualizar linha existente em qualquer tabela do banco de dados
+' PARÂMETROS: pNomePlanilha, pNomeTabela, pColunaChave, pValorChave, pValores
+'--------------------------------------------------------------------------------
+Public Sub AtualizarLinhaTabela(pNomePlanilha As String, pNomeTabela As String, _
+                                pColunaChave As String, pValorChave As String, pValores As Variant)
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim dados As Variant
+    Dim i As Long, totalLinhas As Long
+    Dim linhaEncontrada As Long
+    Dim colunaChaveIndex As Long
+    
+    On Error GoTo ErroAtualizarTabela
+    
+    Set ws = ThisWorkbook.Worksheets(pNomePlanilha)
+    Set tbl = ws.ListObjects(pNomeTabela)
+    
+    Application.ScreenUpdating = False
+    
+    colunaChaveIndex = tbl.ListColumns(pColunaChave).Index
+    
+    dados = tbl.Range.Value
+    totalLinhas = UBound(dados, 1)
+    linhaEncontrada = 0
+    
+    For i = 2 To totalLinhas
+        If Trim(CStr(dados(i, colunaChaveIndex))) = Trim(pValorChave) Then
+            linhaEncontrada = i
+            Exit For
+        End If
+    Next i
+    
+    If linhaEncontrada = 0 Then
+        Err.Raise vbObjectError + 200, "AtualizarLinhaTabela", "Registro não encontrado."
+    End If
+    
+    With tbl.ListRows(linhaEncontrada - 1).Range
+        For i = LBound(pValores) To UBound(pValores)
+            .Cells(1, i + 1).Value = pValores(i)
+        Next i
+    End With
+    
+Sair:
+    Application.ScreenUpdating = True
+    Exit Sub
+    
+ErroAtualizarTabela:
+    MsgBox "Erro ao atualizar registro: " & Err.Description, vbCritical, "APS PURAN - Engine"
+    Resume Sair
+End Sub
+
+'--------------------------------------------------------------------------------
+' SUBROTINA GENÉRICA: ExcluirLinhaTabela
+' PROPÓSITO: Excluir linha de qualquer tabela do banco de dados
+' PARÂMETROS: pNomePlanilha, pNomeTabela, pColunaChave, pValorChave
+'--------------------------------------------------------------------------------
+Public Sub ExcluirLinhaTabela(pNomePlanilha As String, pNomeTabela As String, _
+                              pColunaChave As String, pValorChave As String)
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim dados As Variant
+    Dim i As Long, totalLinhas As Long
+    Dim linhaEncontrada As Long
+    Dim colunaChaveIndex As Long
+    
+    On Error GoTo ErroExcluirTabela
+    
+    Set ws = ThisWorkbook.Worksheets(pNomePlanilha)
+    Set tbl = ws.ListObjects(pNomeTabela)
+    
+    Application.ScreenUpdating = False
+    
+    colunaChaveIndex = tbl.ListColumns(pColunaChave).Index
+    
+    dados = tbl.Range.Value
+    totalLinhas = UBound(dados, 1)
+    linhaEncontrada = 0
+    
+    For i = 2 To totalLinhas
+        If Trim(CStr(dados(i, colunaChaveIndex))) = Trim(pValorChave) Then
+            linhaEncontrada = i
+            Exit For
+        End If
+    Next i
+    
+    If linhaEncontrada = 0 Then
+        Err.Raise vbObjectError + 201, "ExcluirLinhaTabela", "Registro não encontrado."
+    End If
+    
+    tbl.ListRows(linhaEncontrada - 1).Delete
+    
+Sair:
+    Application.ScreenUpdating = True
+    Exit Sub
+    
+ErroExcluirTabela:
+    MsgBox "Erro ao excluir registro: " & Err.Description, vbCritical, "APS PURAN - Engine"
+    Resume Sair
+End Sub

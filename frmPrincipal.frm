@@ -90,6 +90,7 @@ Private btnProducao As MSForms.CommandButton
 Private btnEventos As MSForms.CommandButton
 Private btnConfig As MSForms.CommandButton
 Private btnPlanejamento As MSForms.CommandButton
+Private btnCadastros As MSForms.CommandButton
 
 Private m_btnDashboardEvents As clsButtonEvents
 Private m_btnTimelineEvents As clsButtonEvents
@@ -98,6 +99,7 @@ Private m_btnPlanejamentoEvents As clsButtonEvents
 Private m_btnProducaoEvents As clsButtonEvents
 Private m_btnEventosEvents As clsButtonEvents
 Private m_btnConfigEvents As clsButtonEvents
+Private m_btnCadastrosEvents As clsButtonEvents
 
 Private fraMenu As MSForms.Frame
 Private fraConteudo As MSForms.Frame
@@ -272,7 +274,7 @@ Private Sub UserForm_Initialize()
     End With
     
     '--- Cria Botões de Navegação ----------------------------------------------
-    botoes = Array("btnDashboard", "btnTimeline", "btnCards", "btnPlanejamento", "btnProducao", "btnEventos", "btnConfig")
+    botoes = Array("btnDashboard", "btnTimeline", "btnCards", "btnPlanejamento", "btnProducao", "btnEventos", "btnCadastros", "btnConfig")
     posY = 12
     
     For i = LBound(botoes) To UBound(botoes)
@@ -286,7 +288,8 @@ Private Sub UserForm_Initialize()
             IIf(i = 3, "Planejamento", _
             IIf(i = 4, "Produção", _
             IIf(i = 5, "Eventos", _
-            IIf(i = 6, "Configurações", "")))))))
+            IIf(i = 6, "Cadastros", _
+            IIf(i = 7, "Configurações", ""))))))))
         btn.Left = ESPACAMENTO
         btn.Top = posY
         btn.Width = LARGURA_BOTAO - (2 * ESPACAMENTO)
@@ -305,6 +308,7 @@ Private Sub UserForm_Initialize()
             Case "btnPlanejamento": Set btnPlanejamento = btn
             Case "btnProducao": Set btnProducao = btn
             Case "btnEventos": Set btnEventos = btn
+            Case "btnCadastros": Set btnCadastros = btn
             Case "btnConfig": Set btnConfig = btn
         End Select
     Next i
@@ -326,6 +330,9 @@ Private Sub UserForm_Initialize()
     
     Set m_btnEventosEvents = New clsButtonEvents
     Set m_btnEventosEvents.Button = btnEventos
+    
+    Set m_btnCadastrosEvents = New clsButtonEvents
+    Set m_btnCadastrosEvents.Button = btnCadastros
     
     Set m_btnConfigEvents = New clsButtonEvents
     Set m_btnConfigEvents.Button = btnConfig
@@ -674,6 +681,8 @@ Public Sub ExibirPainel(NomePainel As String)
         Case "Eventos"
             frmEventos.Show vbModal
             ExibirPainel m_UltimoPainelNaoModal
+        Case "Cadastros"
+            frmCadastros.Show vbModeless
         Case Else
             ExibirPainelGenerico NomePainel
     End Select
@@ -1032,6 +1041,14 @@ End Sub
 
 Private Sub btnConfig_Click()
     ExibirPainel "Configurações"
+End Sub
+
+Private Sub btnCadastros_Click()
+    ExibirPainel "Cadastros"
+End Sub
+
+Private Sub m_btnCadastrosEvents_Clicked()
+    btnCadastros_Click
 End Sub
 
 Private Sub m_btnDashboardEvents_Clicked()

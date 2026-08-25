@@ -54,6 +54,46 @@ Public Sub CriarEstruturasDeDados()
         ws.Visible = xlSheetVeryHidden
     End If
     
+    '--- BD_Produtos -------------------------------------------------------------
+    If Not PlanilhaExiste("BD_Produtos") Then
+        Set ws = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
+        ws.Name = "BD_Produtos"
+        CriarTabela ws, "TabelaProdutos", Array("ID_Produto", "Nome", "Descricao", "Tempo_Padrao_Horas", "Status")
+        ws.Visible = xlSheetVeryHidden
+    End If
+    
+    '--- BD_Operadores -----------------------------------------------------------
+    If Not PlanilhaExiste("BD_Operadores") Then
+        Set ws = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
+        ws.Name = "BD_Operadores"
+        CriarTabela ws, "TabelaOperadores", Array("ID_Operador", "Nome", "Status")
+        ws.Visible = xlSheetVeryHidden
+    End If
+    
+    '--- BD_Turnos ---------------------------------------------------------------
+    If Not PlanilhaExiste("BD_Turnos") Then
+        Set ws = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
+        ws.Name = "BD_Turnos"
+        CriarTabela ws, "TabelaTurnos", Array("ID_Turno", "Nome", "Hora_Inicio", "Hora_Fim", "Dias_Funcionamento")
+        ws.Visible = xlSheetVeryHidden
+    End If
+    
+    '--- BD_Processos ------------------------------------------------------------
+    If Not PlanilhaExiste("BD_Processos") Then
+        Set ws = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
+        ws.Name = "BD_Processos"
+        CriarTabela ws, "TabelaProcessos", Array("ID_Processo", "Produto", "Posto", "Sequencia", "Tempo_Padrao_Horas")
+        ws.Visible = xlSheetVeryHidden
+    End If
+    
+    '--- BD_MotivosParada --------------------------------------------------------
+    If Not PlanilhaExiste("BD_MotivosParada") Then
+        Set ws = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
+        ws.Name = "BD_MotivosParada"
+        CriarTabela ws, "TabelaMotivosParada", Array("ID_Motivo", "Descricao", "Categoria", "Status")
+        ws.Visible = xlSheetVeryHidden
+    End If
+    
 Sair:
     Application.ScreenUpdating = True
     Exit Sub
