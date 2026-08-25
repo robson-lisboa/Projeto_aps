@@ -36,12 +36,26 @@ Attribute VB_Name = "frmDetalheOP"
 Option Explicit
 
 Private m_ID_OP As String
+Private btnEditar As MSForms.CommandButton
 
 Private Sub UserForm_Initialize()
     On Error GoTo ErroInicializacao
     
     Me.BackColor = 14211288
     Me.Caption = "Detalhes da OP"
+    
+    Set btnEditar = Me.Controls.Add("Forms.CommandButton.1", "btnEditar", True)
+    With btnEditar
+        .Caption = "Editar"
+        .Left = 180
+        .Top = 340
+        .Width = 120
+        .Height = 30
+        .Font.Size = 10
+        .Font.Bold = True
+        .BackColor = 15773696
+        .ForeColor = 16777215
+    End With
     
 Sair:
     Exit Sub
@@ -95,6 +109,13 @@ Sair:
 ErroCarregar:
     MsgBox "Erro ao carregar detalhes: " & Err.Description, vbCritical, "APS PURAN"
     Resume Sair
+End Sub
+
+Private Sub btnEditar_Click()
+    On Error Resume Next
+    frmCadastroOP.CarregarParaEdicao m_ID_OP
+    frmCadastroOP.Show vbModal
+    Unload Me
 End Sub
 
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)

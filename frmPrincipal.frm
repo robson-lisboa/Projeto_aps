@@ -1216,7 +1216,8 @@ Private Sub UserForm_MouseDown(ByVal Button As Integer, ByVal Shift As Integer, 
                 If relX >= ctrl.Left And relX <= ctrl.Left + ctrl.Width And _
                    relY >= ctrl.Top And relY <= ctrl.Top + ctrl.Height Then
                     frmDetalheOP.CarregarDetalhes ctrl.Tag
-                    frmDetalheOP.Show vbModeless
+                    frmDetalheOP.Show vbModal
+                    Call CarregarPlanejamento
                     Exit Sub
                 End If
             End If

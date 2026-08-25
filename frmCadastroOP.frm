@@ -50,6 +50,8 @@ Private btnCancelar As MSForms.CommandButton
 Private m_btnSalvarEvents As clsButtonEvents
 Private m_btnCancelarEvents As clsButtonEvents
 
+Private m_EditandoID As String
+
 '=== PROPRIEDADES VISUAIS CORPORATIVAS =========================================
 Private Const COR_FUNDO As Long = 14211288
 Private Const COR_HEADER As Long = 3355443
@@ -183,6 +185,47 @@ ErroInicializacao:
 End Sub
 
 '================================================================================
+' SUBROTINA PÚBLICA: CarregarParaEdicao
+' PROPÓSITO: Carregar dados de uma OP existente para edição
+' PARÂMETROS: pID_OP As String – ID da OP a ser editada
+'================================================================================
+Public Sub CarregarParaEdicao(pID_OP As String)
+    On Error GoTo ErroCarregarEdicao
+    
+    m_EditandoID = pID_OP
+    Me.Caption = "APS PURAN – Editar Ordem de Produção: " & pID_OP
+    
+    Dim dados() As Variant
+    dados = ObterDadosOPsEmArray()
+    
+    If IsError(dados) Then Exit Sub
+    
+    Dim i As Long
+    Dim totalLinhas As Long
+    totalLinhas = UBound(dados, 1)
+    
+    For i = 2 To totalLinhas
+        If CStr(dados(i, 1)) = pID_OP Then
+            Me.Controls("txtID_OP").Value = CStr(dados(i, 1))
+            Me.Controls("txtProduto").Value = CStr(dados(i, 2))
+            Me.Controls("cboEquipamento").Value = CStr(dados(i, 3))
+            Me.Controls("txtQuantidade").Value = CStr(dados(i, 4))
+            Me.Controls("txtData_Inicio").Value = Format(CDate(dados(i, 5)), "dd/mm/yyyy")
+            Me.Controls("txtData_Fim").Value = Format(CDate(dados(i, 6)), "dd/mm/yyyy")
+            Me.Controls("cboStatus").Value = CStr(dados(i, 8))
+            Exit For
+        End If
+    Next i
+    
+Sair:
+    Exit Sub
+    
+ErroCarregarEdicao:
+    MsgBox "Erro ao carregar OP para edição: " & Err.Description, vbCritical, "APS PURAN"
+    Resume Sair
+End Sub
+
+'================================================================================
 ' EVENTO: btnSalvar_Click
 ' PROPÓSITO: Validar campos e persistir nova OP via modEngine
 '================================================================================
@@ -255,18 +298,24 @@ Private Sub btnSalvar_Click()
     '--- Cálculo da duração em horas -------------------------------------------
     duracao = (dataFim - dataInicio) * 24
     
-    '--- Valida duplicidade de ID_OP --------------------------------------------
-    If ID_OPExiste(idOP) Then
-        MsgBox "Já existe uma OP cadastrada com o ID informado.", vbExclamation, "Validação"
-        Me.Controls("txtID_OP").SetFocus
-        Exit Sub
+    '--- Valida duplicidade de ID_OP apenas para nova OP ------------------------
+    If m_EditandoID = "" Then
+        If ID_OPExiste(idOP) Then
+            MsgBox "Já existe uma OP cadastrada com o ID informado.", vbExclamation, "Validação"
+            Me.Controls("txtID_OP").SetFocus
+            Exit Sub
+        End If
     End If
     
     '--- Persiste dados via modEngine ------------------------------------------
-    Call SalvarNovaOP(idOP, produto, equipamento, quantidade, dataInicio, dataFim, duracao, status)
+    If m_EditandoID = "" Then
+        Call SalvarNovaOP(idOP, produto, equipamento, quantidade, dataInicio, dataFim, duracao, status)
+        MsgBox "Ordem de Produção cadastrada com sucesso!", vbInformation, "APS PURAN – Cadastro"
+    Else
+        Call AtualizarOP(m_EditandoID, produto, equipamento, quantidade, dataInicio, dataFim, duracao, status)
+        MsgBox "Ordem de Produção atualizada com sucesso!", vbInformation, "APS PURAN – Cadastro"
+    End If
     
-    '--- Feedback e fechamento -------------------------------------------------
-    MsgBox "Ordem de Produção cadastrada com sucesso!", vbInformation, "APS PURAN – Cadastro"
     Unload Me
     
 Sair:
