@@ -89,10 +89,12 @@ Private btnCards As MSForms.CommandButton
 Private btnProducao As MSForms.CommandButton
 Private btnEventos As MSForms.CommandButton
 Private btnConfig As MSForms.CommandButton
+Private btnPlanejamento As MSForms.CommandButton
 
 Private m_btnDashboardEvents As clsButtonEvents
 Private m_btnTimelineEvents As clsButtonEvents
 Private m_btnCardsEvents As clsButtonEvents
+Private m_btnPlanejamentoEvents As clsButtonEvents
 Private m_btnProducaoEvents As clsButtonEvents
 Private m_btnEventosEvents As clsButtonEvents
 Private m_btnConfigEvents As clsButtonEvents
@@ -103,6 +105,26 @@ Private lblTitulo As MSForms.Label
 Private btnMinimizar As MSForms.CommandButton
 Private btnMaximizar As MSForms.CommandButton
 Private btnFechar As MSForms.CommandButton
+
+' Área de produção (planejamento temporal)
+Private fraProducao As MSForms.Frame
+Private hScrollProducao As MSForms.ScrollBar
+
+' Controles do cabeçalho de planejamento
+Private cmdHoje As MSForms.CommandButton
+Private cmdDia As MSForms.CommandButton
+Private cmdSemana As MSForms.CommandButton
+Private cmdMes As MSForms.CommandButton
+Private cmdPersonalizado As MSForms.CommandButton
+Private txtDataInicial As MSForms.TextBox
+Private txtDataFinal As MSForms.TextBox
+Private cmdAplicarPeriodo As MSForms.CommandButton
+Private cmdZoomMenos As MSForms.CommandButton
+Private cmdZoomMais As MSForms.CommandButton
+Private lblZoom As MSForms.Label
+Private cmdAtualizar As MSForms.CommandButton
+Private cmdAdicionarOP As MSForms.CommandButton
+Private cmdSimularProducao As MSForms.CommandButton
 
 ' Labels do Dashboard (nível de módulo para permitir atualização)
 Private lblKPIPlanejadas As MSForms.Label
@@ -133,10 +155,18 @@ Private Const COR_HEADER As Long = 3355443
 Private Const COR_TEXTO_CLARO As Long = 16777215
 Private Const COR_TEXTO_ESCURO As Long = 0
 Private Const COR_ALERTA As Long = 255
+Private Const COR_AZUL As Long = 15773696
+Private Const COR_VERDE As Long = 5287936
+Private Const COR_AMARELO As Long = 65535
 
 Private Const LARGURA_BOTAO As Single = 140
 Private Const ALTURA_BOTAO As Single = 36
 Private Const ESPACAMENTO As Single = 8
+
+'=== ESTADO DO SISTEMA =========================================================
+Private m_DataInicioPeriodo As Date
+Private m_DataFimPeriodo As Date
+Private m_Zoom As Double
 
 '================================================================================
 ' EVENTO: UserForm_Initialize
@@ -154,6 +184,11 @@ Private Sub UserForm_Initialize()
     m_Maximizado = False
     m_PainelAtivo = ""
     m_DadosKPIs = Empty
+    
+    ' Inicializar período padrão (mês atual)
+    m_DataInicioPeriodo = DateSerial(Year(Date), Month(Date), 1)
+    m_DataFimPeriodo = DateSerial(Year(Date), Month(Date) + 1, 0)
+    m_Zoom = 1.0
     
     ' Aplica estilo de janela redimensionável do Windows
     AplicarEstiloRedimensionavel
@@ -231,7 +266,7 @@ Private Sub UserForm_Initialize()
     End With
     
     '--- Cria Botões de Navegação ----------------------------------------------
-    botoes = Array("btnDashboard", "btnTimeline", "btnCards", "btnProducao", "btnEventos", "btnConfig")
+    botoes = Array("btnDashboard", "btnTimeline", "btnCards", "btnPlanejamento", "btnProducao", "btnEventos", "btnConfig")
     posY = 12
     
     For i = LBound(botoes) To UBound(botoes)
@@ -242,9 +277,10 @@ Private Sub UserForm_Initialize()
             IIf(i = 0, "Dashboard", _
             IIf(i = 1, "Timeline", _
             IIf(i = 2, "Cards", _
-            IIf(i = 3, "Produção", _
-            IIf(i = 4, "Eventos", _
-            IIf(i = 5, "Configurações", ""))))))
+            IIf(i = 3, "Planejamento", _
+            IIf(i = 4, "Produção", _
+            IIf(i = 5, "Eventos", _
+            IIf(i = 6, "Configurações", "")))))))
         btn.Left = ESPACAMENTO
         btn.Top = posY
         btn.Width = LARGURA_BOTAO - (2 * ESPACAMENTO)
@@ -260,6 +296,7 @@ Private Sub UserForm_Initialize()
             Case "btnDashboard": Set btnDashboard = btn
             Case "btnTimeline": Set btnTimeline = btn
             Case "btnCards": Set btnCards = btn
+            Case "btnPlanejamento": Set btnPlanejamento = btn
             Case "btnProducao": Set btnProducao = btn
             Case "btnEventos": Set btnEventos = btn
             Case "btnConfig": Set btnConfig = btn
@@ -274,6 +311,9 @@ Private Sub UserForm_Initialize()
     
     Set m_btnCardsEvents = New clsButtonEvents
     Set m_btnCardsEvents.Button = btnCards
+    
+    Set m_btnPlanejamentoEvents = New clsButtonEvents
+    Set m_btnPlanejamentoEvents.Button = btnPlanejamento
     
     Set m_btnProducaoEvents = New clsButtonEvents
     Set m_btnProducaoEvents.Button = btnProducao
@@ -297,6 +337,220 @@ Private Sub UserForm_Initialize()
         .ScrollBars = fmScrollBarsVertical
         .ScrollHeight = 2000
         .Font.Size = 10
+    End With
+    
+    '--- Cria controles do Planejamento -----------------------------------------
+    Set fraProducao = Me.Controls.Add("Forms.Frame.1", "fraProducao", True)
+    With fraProducao
+        .Caption = ""
+        .Left = 184
+        .Top = 72
+        .Width = Me.ClientWidth - 196
+        .Height = Me.ClientHeight - 96
+        .BackColor = COR_FUNDO
+        .BorderStyle = fmBorderStyleSingle
+        .Font.Size = 10
+    End With
+    
+    ' Botões de período
+    Dim periodoLeft As Single
+    periodoLeft = 12
+    
+    Set cmdHoje = Me.Controls.Add("Forms.CommandButton.1", "cmdHoje", True)
+    With cmdHoje
+        .Caption = "Hoje"
+        .Left = periodoLeft
+        .Top = 12
+        .Width = 60
+        .Height = 24
+        .Font.Size = 9
+        .BackColor = COR_HEADER
+        .ForeColor = COR_TEXTO_CLARO
+    End With
+    periodoLeft = periodoLeft + 66
+    
+    Set cmdDia = Me.Controls.Add("Forms.CommandButton.1", "cmdDia", True)
+    With cmdDia
+        .Caption = "Dia"
+        .Left = periodoLeft
+        .Top = 12
+        .Width = 50
+        .Height = 24
+        .Font.Size = 9
+        .BackColor = COR_HEADER
+        .ForeColor = COR_TEXTO_CLARO
+    End With
+    periodoLeft = periodoLeft + 56
+    
+    Set cmdSemana = Me.Controls.Add("Forms.CommandButton.1", "cmdSemana", True)
+    With cmdSemana
+        .Caption = "Semana"
+        .Left = periodoLeft
+        .Top = 12
+        .Width = 60
+        .Height = 24
+        .Font.Size = 9
+        .BackColor = COR_HEADER
+        .ForeColor = COR_TEXTO_CLARO
+    End With
+    periodoLeft = periodoLeft + 66
+    
+    Set cmdMes = Me.Controls.Add("Forms.CommandButton.1", "cmdMes", True)
+    With cmdMes
+        .Caption = "Mês"
+        .Left = periodoLeft
+        .Top = 12
+        .Width = 50
+        .Height = 24
+        .Font.Size = 9
+        .BackColor = COR_HEADER
+        .ForeColor = COR_TEXTO_CLARO
+    End With
+    periodoLeft = periodoLeft + 56
+    
+    Set cmdPersonalizado = Me.Controls.Add("Forms.CommandButton.1", "cmdPersonalizado", True)
+    With cmdPersonalizado
+        .Caption = "Personalizado"
+        .Left = periodoLeft
+        .Top = 12
+        .Width = 90
+        .Height = 24
+        .Font.Size = 9
+        .BackColor = COR_HEADER
+        .ForeColor = COR_TEXTO_CLARO
+    End With
+    periodoLeft = periodoLeft + 96
+    
+    ' Datas personalizadas
+    Set txtDataInicial = Me.Controls.Add("Forms.TextBox.1", "txtDataInicial", True)
+    With txtDataInicial
+        .Text = Format(m_DataInicioPeriodo, "dd/mm/yyyy")
+        .Left = periodoLeft
+        .Top = 12
+        .Width = 90
+        .Height = 22
+        .Font.Size = 9
+    End With
+    periodoLeft = periodoLeft + 96
+    
+    Set txtDataFinal = Me.Controls.Add("Forms.TextBox.1", "txtDataFinal", True)
+    With txtDataFinal
+        .Text = Format(m_DataFimPeriodo, "dd/mm/yyyy")
+        .Left = periodoLeft
+        .Top = 12
+        .Width = 90
+        .Height = 22
+        .Font.Size = 9
+    End With
+    periodoLeft = periodoLeft + 96
+    
+    Set cmdAplicarPeriodo = Me.Controls.Add("Forms.CommandButton.1", "cmdAplicarPeriodo", True)
+    With cmdAplicarPeriodo
+        .Caption = "Aplicar"
+        .Left = periodoLeft
+        .Top = 12
+        .Width = 70
+        .Height = 24
+        .Font.Size = 9
+        .BackColor = COR_AZUL
+        .ForeColor = COR_TEXTO_CLARO
+    End With
+    periodoLeft = periodoLeft + 76
+    
+    ' Zoom
+    Set cmdZoomMenos = Me.Controls.Add("Forms.CommandButton.1", "cmdZoomMenos", True)
+    With cmdZoomMenos
+        .Caption = "-"
+        .Left = periodoLeft
+        .Top = 12
+        .Width = 24
+        .Height = 24
+        .Font.Size = 10
+        .Font.Bold = True
+        .BackColor = COR_HEADER
+        .ForeColor = COR_TEXTO_CLARO
+    End With
+    periodoLeft = periodoLeft + 28
+    
+    Set lblZoom = Me.Controls.Add("Forms.Label.1", "lblZoom", True)
+    With lblZoom
+        .Caption = "100%"
+        .Left = periodoLeft
+        .Top = 12
+        .Width = 40
+        .Height = 24
+        .Font.Size = 9
+        .ForeColor = COR_TEXTO_ESCURO
+        .BackColor = COR_FUNDO
+        .TextAlign = fmTextAlignCenter
+    End With
+    periodoLeft = periodoLeft + 44
+    
+    Set cmdZoomMais = Me.Controls.Add("Forms.CommandButton.1", "cmdZoomMais", True)
+    With cmdZoomMais
+        .Caption = "+"
+        .Left = periodoLeft
+        .Top = 12
+        .Width = 24
+        .Height = 24
+        .Font.Size = 10
+        .Font.Bold = True
+        .BackColor = COR_HEADER
+        .ForeColor = COR_TEXTO_CLARO
+    End With
+    periodoLeft = periodoLeft + 28
+    
+    ' Ações
+    Set cmdAtualizar = Me.Controls.Add("Forms.CommandButton.1", "cmdAtualizar", True)
+    With cmdAtualizar
+        .Caption = "Atualizar"
+        .Left = periodoLeft
+        .Top = 12
+        .Width = 80
+        .Height = 24
+        .Font.Size = 9
+        .BackColor = COR_VERDE
+        .ForeColor = COR_TEXTO_CLARO
+    End With
+    periodoLeft = periodoLeft + 86
+    
+    Set cmdAdicionarOP = Me.Controls.Add("Forms.CommandButton.1", "cmdAdicionarOP", True)
+    With cmdAdicionarOP
+        .Caption = "Nova OP"
+        .Left = periodoLeft
+        .Top = 12
+        .Width = 80
+        .Height = 24
+        .Font.Size = 9
+        .BackColor = COR_AZUL
+        .ForeColor = COR_TEXTO_CLARO
+    End With
+    periodoLeft = periodoLeft + 86
+    
+    Set cmdSimularProducao = Me.Controls.Add("Forms.CommandButton.1", "cmdSimularProducao", True)
+    With cmdSimularProducao
+        .Caption = "Simular"
+        .Left = periodoLeft
+        .Top = 12
+        .Width = 80
+        .Height = 24
+        .Font.Size = 9
+        .BackColor = COR_AMARELO
+        .ForeColor = COR_TEXTO_ESCURO
+    End With
+    
+    ' Scroll horizontal da área de produção
+    Set hScrollProducao = Me.Controls.Add("Forms.ScrollBar.1", "hScrollProducao", True)
+    With hScrollProducao
+        .Left = 12
+        .Top = Me.ClientHeight - 96 - 20
+        .Width = Me.ClientWidth - 24
+        .Height = 16
+        .Min = 0
+        .Max = 100
+        .SmallChange = 10
+        .LargeChange = 50
+        .Value = 0
     End With
     
     ' Exibe o painel inicial
@@ -337,6 +591,17 @@ Public Sub ExibirPainel(NomePainel As String)
     
     m_PainelAtivo = NomePainel
     
+    ' Mostra/esconde área de planejamento conforme módulo
+    If NomePainel = "Planejamento" Then
+        If Not fraProducao Is Nothing Then fraProducao.Visible = True
+        If Not hScrollProducao Is Nothing Then hScrollProducao.Visible = True
+        If Not fraConteudo Is Nothing Then fraConteudo.Visible = False
+    Else
+        If Not fraProducao Is Nothing Then fraProducao.Visible = False
+        If Not hScrollProducao Is Nothing Then hScrollProducao.Visible = False
+        If Not fraConteudo Is Nothing Then fraConteudo.Visible = True
+    End If
+    
     ' Direciona para a rotina específica de cada módulo
     Select Case NomePainel
         Case "Dashboard"
@@ -345,6 +610,8 @@ Public Sub ExibirPainel(NomePainel As String)
             modTimeline.CarregarTimeline fraConteudo
         Case "Cards"
             modCards.CarregarCards fraConteudo
+        Case "Planejamento"
+            CarregarPlanejamento
         Case "Produção"
             frmCadastroOP.Show vbModal
             ExibirPainel m_UltimoPainelNaoModal
@@ -393,6 +660,35 @@ Sair:
 ErroGenerico:
     MsgBox "Erro ao exibir painel genérico: " & Err.Description, _
            vbCritical + vbOKOnly, "APS PURAN – Navegação"
+    Resume Sair
+End Sub
+
+'================================================================================
+' SUBROTINA PÚBLICA: CarregarPlanejamento
+' PROPÓSITO: Renderizar a visualização de planejamento (cards flutuantes) no frame
+'================================================================================
+Public Sub CarregarPlanejamento()
+    On Error GoTo ErroCarregarPlanejamento
+    
+    fraProducao.Visible = True
+    fraProducao.Left = 184
+    fraProducao.Top = 72
+    fraProducao.Width = Me.ClientWidth - 196
+    fraProducao.Height = Me.ClientHeight - 96
+    
+    hScrollProducao.Visible = True
+    hScrollProducao.Left = 184
+    hScrollProducao.Top = Me.ClientHeight - 96 - 20
+    hScrollProducao.Width = Me.ClientWidth - 196
+    
+    Call modGantt.CarregarGantt(fraProducao, hScrollProducao, m_DataInicioPeriodo, m_DataFimPeriodo, m_Zoom)
+    
+Sair:
+    Exit Sub
+    
+ErroCarregarPlanejamento:
+    MsgBox "Erro ao carregar planejamento: " & Err.Description, _
+           vbCritical + vbOKOnly, "APS PURAN – Planejamento"
     Resume Sair
 End Sub
 
@@ -611,14 +907,14 @@ Private Function CriaKPI(pLeft As Single, pTop As Single, _
     uniqueID = Format(Now, "SSSSS") & "_" & CStr(Int(Rnd * 100000))
     
     Dim larguraUsada As Single
-    larguraUsada = IIf(pLargura > 0, pLargura, LARGURA_KPI)
+    larguraUsada = IIf(pLargura > 0, pLargura, 300)
     
     Set lbl = fraConteudo.Controls.Add("Forms.Label.1", "lblKPI_" & uniqueID, True)
     With lbl
         .Left = pLeft
         .Top = pTop
         .Width = larguraUsada
-        .Height = ALTURA_KPI
+        .Height = 100
         .BackColor = vbWhite
         .BorderStyle = fmBorderStyleSingle
     End With
@@ -753,6 +1049,89 @@ Private Sub btnFechar_Click()
     UserForm_QueryClose 0, vbFormControlMenu
 End Sub
 
+Private Sub btnPlanejamento_Click()
+    ExibirPainel "Planejamento"
+End Sub
+
+Private Sub m_btnPlanejamentoEvents_Clicked()
+    btnPlanejamento_Click
+End Sub
+
+Private Sub cmdHoje_Click()
+    m_DataInicioPeriodo = DateSerial(Year(Now), Month(Now), Day(Now))
+    m_DataFimPeriodo = DateSerial(Year(Now), Month(Now), Day(Now)) + 1
+    Call CarregarPlanejamento
+End Sub
+
+Private Sub cmdDia_Click()
+    m_DataInicioPeriodo = DateSerial(Year(Now), Month(Now), Day(Now))
+    m_DataFimPeriodo = DateSerial(Year(Now), Month(Now), Day(Now)) + 1
+    Call CarregarPlanejamento
+End Sub
+
+Private Sub cmdSemana_Click()
+    Dim diaSemana As Long
+    diaSemana = Weekday(Now, vbMonday)
+    m_DataInicioPeriodo = DateAdd("d", -(diaSemana - 1), DateSerial(Year(Now), Month(Now), Day(Now)))
+    m_DataFimPeriodo = DateAdd("d", 7, m_DataInicioPeriodo)
+    Call CarregarPlanejamento
+End Sub
+
+Private Sub cmdMes_Click()
+    m_DataInicioPeriodo = DateSerial(Year(Now), Month(Now), 1)
+    m_DataFimPeriodo = DateSerial(Year(Now), Month(Now) + 1, 0)
+    Call CarregarPlanejamento
+End Sub
+
+Private Sub cmdPersonalizado_Click()
+    m_DataInicioPeriodo = CDate(txtDataInicial.Text)
+    m_DataFimPeriodo = CDate(txtDataFinal.Text)
+    Call CarregarPlanejamento
+End Sub
+
+Private Sub cmdAplicarPeriodo_Click()
+    On Error Resume Next
+    m_DataInicioPeriodo = CDate(txtDataInicial.Text)
+    m_DataFimPeriodo = CDate(txtDataFinal.Text)
+    Call CarregarPlanejamento
+End Sub
+
+Private Sub cmdZoomMenos_Click()
+    m_Zoom = m_Zoom - 0.25
+    If m_Zoom < 0.5 Then m_Zoom = 0.5
+    lblZoom.Caption = Format(m_Zoom, "0%")
+    Call CarregarPlanejamento
+End Sub
+
+Private Sub cmdZoomMais_Click()
+    m_Zoom = m_Zoom + 0.25
+    If m_Zoom > 3.0 Then m_Zoom = 3.0
+    lblZoom.Caption = Format(m_Zoom, "0%")
+    Call CarregarPlanejamento
+End Sub
+
+Private Sub cmdAtualizar_Click()
+    Call CarregarPlanejamento
+End Sub
+
+Private Sub cmdAdicionarOP_Click()
+    frmCadastroOP.Show vbModal
+    If m_PainelAtivo = "Planejamento" Then
+        Call CarregarPlanejamento
+    End If
+End Sub
+
+Private Sub cmdSimularProducao_Click()
+    Call CarregarPlanejamento
+End Sub
+
+Private Sub hScrollProducao_Change()
+    On Error Resume Next
+    Dim offsetX As Single
+    offsetX = -hScrollProducao.Value
+    fraProducao.Left = 184 + offsetX
+End Sub
+
 '================================================================================
 ' EVENTO: UserForm_QueryClose
 ' PROPÓSITO: Confirmação de saída segura e restauração do Excel
@@ -802,5 +1181,18 @@ Private Sub UserForm_Resize()
     ' Ajusta layout dos KPIs se houver dados carregados
     If m_PainelAtivo = "Dashboard" And Not IsEmpty(m_DadosKPIs) Then
         RenderizarKPIs
+    End If
+    
+    ' Ajusta área de planejamento se visível
+    If m_PainelAtivo = "Planejamento" Then
+        If Not fraProducao Is Nothing Then
+            fraProducao.Width = Me.ClientWidth - 196
+            fraProducao.Height = Me.ClientHeight - 96
+        End If
+        If Not hScrollProducao Is Nothing Then
+            hScrollProducao.Width = Me.ClientWidth - 196
+            hScrollProducao.Top = Me.ClientHeight - 96 - 20
+        End If
+        Call CarregarPlanejamento
     End If
 End Sub
