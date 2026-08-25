@@ -2,17 +2,17 @@ VERSION 1.0 FORM
 BEGIN
   MultiUse = -1
   BackColor = 12632256
-  BorderStyle = 1
+  BorderStyle = 3
   Caption = "APS PURAN – Sistema de Planejamento de Produção Industrial"
-  ClientHeight = 620
+  ClientHeight = 756
   ClientLeft = 2268
   ClientTop = 1128
-  ClientWidth = 980
-  Height = 664
+  ClientWidth = 1188
+  Height = 800
   Left = 2268
   ScaleMode = 3
   Top = 1128
-  Width = 992
+  Width = 1200
   StartUpPosition = 1
   Attribute VB_Name = "frmPrincipal"
   Attribute VB_GlobalNameSpace = False
@@ -35,6 +35,53 @@ Attribute VB_Name = "frmPrincipal"
 '================================================================================
 Option Explicit
 
+'=== API DO WINDOWS (COMPATÍVEL 32/64-BIT) =====================================
+#If VBA7 Then
+    Private Declare PtrSafe Function ShowWindow Lib "user32" (ByVal hWnd As LongPtr, ByVal nCmdShow As Long) As Long
+    Private Declare PtrSafe Function GetActiveWindow Lib "user32" () As LongPtr
+    Private Declare PtrSafe Function SetWindowLongPtr Lib "user32" Alias "SetWindowLongPtrA" (ByVal hWnd As LongPtr, ByVal nIndex As Long, ByVal dwNewLong As LongPtr) As LongPtr
+    Private Declare PtrSafe Function GetWindowLongPtr Lib "user32" Alias "GetWindowLongPtrA" (ByVal hWnd As LongPtr, ByVal nIndex As Long) As LongPtr
+#Else
+    Private Declare Function ShowWindow Lib "user32" (ByVal hWnd As Long, ByVal nCmdShow As Long) As Long
+    Private Declare Function GetActiveWindow Lib "user32" () As Long
+    Private Declare Function SetWindowLong Lib "user32" Alias "SetWindowLongA" (ByVal hWnd As Long, ByVal nIndex As Long, ByVal dwNewLong As Long) As Long
+    Private Declare Function GetWindowLong Lib "user32" Alias "GetWindowLongA" (ByVal hWnd As Long, ByVal nIndex As Long) As Long
+#End If
+
+Private Const SW_MINIMIZE As Long = 6
+Private Const SW_MAXIMIZE As Long = 3
+Private Const SW_RESTORE As Long = 9
+
+Private Const GWL_STYLE As Long = -16
+Private Const WS_THICKFRAME As Long = &H40000
+Private Const WS_SIZEBOX As Long = WS_THICKFRAME
+
+'================================================================================
+' FUNÇÃO PRIVADA: AplicarEstiloRedimensionavel
+' PROPÓSITO: Adicionar estilo WS_THICKFRAME à janela do UserForm para permitir
+'            redimensionamento manual pelas bordas e cantos, como uma janela normal.
+'================================================================================
+Private Sub AplicarEstiloRedimensionavel()
+    On Error Resume Next
+    
+    Dim hWnd As LongPtr
+    Dim estilo As LongPtr
+    
+    #If VBA7 Then
+        hWnd = Me.hWnd
+    #Else
+        hWnd = GetActiveWindow()
+    #End If
+    
+    If hWnd <> 0 Then
+        estilo = GetWindowLongPtr(hWnd, GWL_STYLE)
+        If estilo <> 0 Then
+            estilo = estilo Or WS_THICKFRAME
+            SetWindowLongPtr hWnd, GWL_STYLE, estilo
+        End If
+    End If
+End Sub
+
 '=== CONTROLES DO FORMULÁRIO ===================================================
 Private btnDashboard As MSForms.CommandButton
 Private btnTimeline As MSForms.CommandButton
@@ -53,6 +100,9 @@ Private m_btnConfigEvents As clsButtonEvents
 Private fraMenu As MSForms.Frame
 Private fraConteudo As MSForms.Frame
 Private lblTitulo As MSForms.Label
+Private btnMinimizar As MSForms.CommandButton
+Private btnMaximizar As MSForms.CommandButton
+Private btnFechar As MSForms.CommandButton
 
 ' Labels do Dashboard (nível de módulo para permitir atualização)
 Private lblKPIPlanejadas As MSForms.Label
@@ -64,6 +114,17 @@ Private lblKPIHorasRealizadas As MSForms.Label
 
 ' Armazena o último painel não-modal para recarregamento após fechar modais
 Private m_UltimoPainelNaoModal As String
+
+' Estado de maximização
+Private m_Maximizado As Boolean
+Private m_TamanhoNormalLargura As Single
+Private m_TamanhoNormalAltura As Single
+Private m_TamanhoNormalLeft As Single
+Private m_TamanhoNormalTop As Single
+
+' Dados dos KPIs para reprocessamento durante resize
+Private m_DadosKPIs As Variant
+Private m_PainelAtivo As String
 
 '=== PROPRIEDADES VISUAIS CORPORATIVAS =========================================
 Private Const COR_FUNDO As Long = 4474559
@@ -90,6 +151,12 @@ Private Sub UserForm_Initialize()
     
     ' Configura propriedades visuais do formulário
     Me.BackColor = COR_FUNDO
+    m_Maximizado = False
+    m_PainelAtivo = ""
+    m_DadosKPIs = Empty
+    
+    ' Aplica estilo de janela redimensionável do Windows
+    AplicarEstiloRedimensionavel
     
     '--- Cria Header -----------------------------------------------------------
     Set lblTitulo = Me.Controls.Add("Forms.Label.1", "lblTitulo", True)
@@ -97,7 +164,7 @@ Private Sub UserForm_Initialize()
         .Caption = "APS PURAN – Sistema de Planejamento de Produção"
         .Left = 12
         .Top = 12
-        .Width = 960
+        .Width = Me.ClientWidth - 24
         .Height = 48
         .Font.Size = 14
         .Font.Bold = True
@@ -107,6 +174,49 @@ Private Sub UserForm_Initialize()
         .TextAlign = fmTextAlignCenter
     End With
     
+    '--- Cria Botões de Controle da Janela --------------------------------------
+    Set btnMinimizar = Me.Controls.Add("Forms.CommandButton.1", "btnMinimizar", True)
+    With btnMinimizar
+        .Caption = ChrW(8722)
+        .Left = Me.ClientWidth - 90
+        .Top = 18
+        .Width = 24
+        .Height = 24
+        .Font.Size = 12
+        .Font.Bold = True
+        .ForeColor = COR_TEXTO_CLARO
+        .BackColor = COR_HEADER
+        .BorderStyle = fmBorderStyleNone
+    End With
+    
+    Set btnMaximizar = Me.Controls.Add("Forms.CommandButton.1", "btnMaximizar", True)
+    With btnMaximizar
+        .Caption = ChrW(9633)
+        .Left = Me.ClientWidth - 60
+        .Top = 18
+        .Width = 24
+        .Height = 24
+        .Font.Size = 12
+        .Font.Bold = True
+        .ForeColor = COR_TEXTO_CLARO
+        .BackColor = COR_HEADER
+        .BorderStyle = fmBorderStyleNone
+    End With
+    
+    Set btnFechar = Me.Controls.Add("Forms.CommandButton.1", "btnFechar", True)
+    With btnFechar
+        .Caption = ChrW(215)
+        .Left = Me.ClientWidth - 30
+        .Top = 18
+        .Width = 24
+        .Height = 24
+        .Font.Size = 14
+        .Font.Bold = True
+        .ForeColor = vbWhite
+        .BackColor = COR_ALERTA
+        .BorderStyle = fmBorderStyleNone
+    End With
+    
     '--- Cria Frame do Menu Lateral --------------------------------------------
     Set fraMenu = Me.Controls.Add("Forms.Frame.1", "fraMenu", True)
     With fraMenu
@@ -114,7 +224,7 @@ Private Sub UserForm_Initialize()
         .Left = 12
         .Top = 72
         .Width = 160
-        .Height = 540
+        .Height = Me.ClientHeight - 96
         .BackColor = COR_PAINEL
         .BorderStyle = fmBorderStyleSingle
         .Font.Size = 10
@@ -145,6 +255,15 @@ Private Sub UserForm_Initialize()
         btn.ForeColor = COR_TEXTO_CLARO
         
         posY = posY + ALTURA_BOTAO + ESPACAMENTO
+        
+        Select Case botoes(i)
+            Case "btnDashboard": Set btnDashboard = btn
+            Case "btnTimeline": Set btnTimeline = btn
+            Case "btnCards": Set btnCards = btn
+            Case "btnProducao": Set btnProducao = btn
+            Case "btnEventos": Set btnEventos = btn
+            Case "btnConfig": Set btnConfig = btn
+        End Select
     Next i
     
     Set m_btnDashboardEvents = New clsButtonEvents
@@ -171,8 +290,8 @@ Private Sub UserForm_Initialize()
         .Caption = ""
         .Left = 184
         .Top = 72
-        .Width = 788
-        .Height = 540
+        .Width = Me.ClientWidth - 196
+        .Height = Me.ClientHeight - 96
         .BackColor = COR_PAINEL
         .BorderStyle = fmBorderStyleSingle
         .ScrollBars = fmScrollBarsVertical
@@ -215,6 +334,8 @@ Public Sub ExibirPainel(NomePainel As String)
     If NomePainel <> "Produção" And NomePainel <> "Eventos" Then
         m_UltimoPainelNaoModal = NomePainel
     End If
+    
+    m_PainelAtivo = NomePainel
     
     ' Direciona para a rotina específica de cada módulo
     Select Case NomePainel
@@ -323,11 +444,34 @@ Public Sub CarregarDashboard()
     
     totalPlanejadas = totalPlanejadas + totalConcluidas + totalEmAndamento + totalAtrasadas
     
-    ' Renderiza interface do Dashboard
+    ' Armazena dados para reprocessamento durante resize
+    m_DadosKPIs = Array(totalPlanejadas, totalConcluidas, totalEmAndamento, totalAtrasadas, totalHorasPlanejadas, totalHorasRealizadas)
+    m_PainelAtivo = "Dashboard"
+    
+    RenderizarKPIs
+    
+Sair:
+    Exit Sub
+    
+ErroCarregarDashboard:
+    MsgBox "Erro ao carregar Dashboard: " & Err.Description, _
+           vbCritical + vbOKOnly, "APS PURAN – Dashboard"
+    Resume Sair
+End Sub
+
+'================================================================================
+' SUBROTINA PRIVADA: RenderizarKPIs
+' PROPÓSITO: Recriar todos os controles do Dashboard com base nos dados armazenados
+'================================================================================
+Private Sub RenderizarKPIs()
+    On Error GoTo ErroRenderizar
+    
     Dim ctrl As MSForms.Control
     For Each ctrl In fraConteudo.Controls
         fraConteudo.Controls.Remove ctrl.Name
     Next ctrl
+    
+    If IsEmpty(m_DadosKPIs) Then Exit Sub
     
     Dim titulo As MSForms.Label
     Set titulo = fraConteudo.Controls.Add("Forms.Label.1", "lblDashTitulo", True)
@@ -344,21 +488,89 @@ Public Sub CarregarDashboard()
         .TextAlign = fmTextAlignCenter
     End With
     
-    Const COLUNA1_X As Single = 40
-    Const COLUNA2_X As Single = 420
-    Const LINHA_INICIO_Y As Single = 80
-    Const LARGURA_KPI As Single = 320
-    Const ALTURA_KPI As Single = 100
-    Const ESPACO_Y As Single = 120
+    AjustarLayoutKPIs
+    
+Sair:
+    Exit Sub
+    
+ErroRenderizar:
+    Resume Sair
+End Sub
+
+'================================================================================
+' SUBROTINA PRIVADA: AjustarLayoutKPIs
+' PROPÓSITO: Recalcular posições e larguras das colunas de KPI conforme espaço disponível
+'================================================================================
+Private Sub AjustarLayoutKPIs()
+    On Error GoTo ErroAjustar
+    
+    If IsEmpty(m_DadosKPIs) Then Exit Sub
+    
+    Dim larguraDisponivel As Single
+    larguraDisponivel = fraConteudo.Width - 40
+    
+    Dim COLUNA1_X As Single
+    Dim COLUNA2_X As Single
+    Dim LARGURA_KPI As Single
+    Dim LARGURA_KPI_MENOR As Single
+    Dim LINHA_INICIO_Y As Single
+    Dim ALTURA_KPI As Single
+    Dim ESPACO_Y As Single
+    Dim espacoEntreColunas As Single
+    
+    COLUNA1_X = 20
+    espacoEntreColunas = 40
+    LINHA_INICIO_Y = 80
+    ALTURA_KPI = 100
+    ESPACO_Y = 140
+    
+    ' Calcula largura da coluna maior: 65% do espaço disponível
+    LARGURA_KPI = larguraDisponivel * 0.65
+    If LARGURA_KPI < 300 Then LARGURA_KPI = 300
+    If LARGURA_KPI > 700 Then LARGURA_KPI = 700
+    
+    ' Calcula largura da coluna menor: 30% do espaço disponível
+    LARGURA_KPI_MENOR = larguraDisponivel * 0.30
+    If LARGURA_KPI_MENOR < 200 Then LARGURA_KPI_MENOR = 200
+    If LARGURA_KPI_MENOR > 400 Then LARGURA_KPI_MENOR = 400
+    
+    ' Garante que as duas colunas caibam
+    If COLUNA1_X + LARGURA_KPI + espacoEntreColunas + LARGURA_KPI_MENOR > larguraDisponivel Then
+        LARGURA_KPI = (larguraDisponivel - espacoEntreColunas) * 0.65
+        LARGURA_KPI_MENOR = (larguraDisponivel - espacoEntreColunas) * 0.35
+    End If
+    
+    COLUNA2_X = COLUNA1_X + LARGURA_KPI + espacoEntreColunas
+    
+    ' Ajusta espaçamento vertical se altura for pequena
+    Dim alturaDisponivel As Single
+    alturaDisponivel = fraConteudo.Height - LINHA_INICIO_Y - 40
+    If alturaDisponivel < 500 Then
+        ESPACO_Y = alturaDisponivel / 3
+    End If
+    
+    Dim totalPlanejadas As Long
+    Dim totalConcluidas As Long
+    Dim totalEmAndamento As Long
+    Dim totalAtrasadas As Long
+    Dim totalHorasPlanejadas As Double
+    Dim totalHorasRealizadas As Double
+    
+    totalPlanejadas = m_DadosKPIs(0)
+    totalConcluidas = m_DadosKPIs(1)
+    totalEmAndamento = m_DadosKPIs(2)
+    totalAtrasadas = m_DadosKPIs(3)
+    totalHorasPlanejadas = m_DadosKPIs(4)
+    totalHorasRealizadas = m_DadosKPIs(5)
     
     Set lblKPIPlanejadas = CriaKPI(COLUNA1_X, LINHA_INICIO_Y, _
-        "Total de Produções Planejadas", CStr(totalPlanejadas), COR_TEXTO_ESCURO)
+        "Total de Produções Planejadas", CStr(totalPlanejadas), COR_TEXTO_ESCURO, LARGURA_KPI)
     
     Set lblKPIConcluidas = CriaKPI(COLUNA2_X, LINHA_INICIO_Y, _
-        "Produções Concluídas", CStr(totalConcluidas), vbGreen)
+        "Produções Concluídas", CStr(totalConcluidas), vbGreen, LARGURA_KPI_MENOR)
     
     Set lblKPIEmAndamento = CriaKPI(COLUNA1_X, LINHA_INICIO_Y + ESPACO_Y, _
-        "Produções em Andamento", CStr(totalEmAndamento), COR_HEADER)
+        "Produções em Andamento", CStr(totalEmAndamento), COR_HEADER, LARGURA_KPI)
     
     Dim corAtrasos As Long
     If totalAtrasadas > 0 Then
@@ -368,20 +580,18 @@ Public Sub CarregarDashboard()
     End If
     
     Set lblKPIAtrasadas = CriaKPI(COLUNA2_X, LINHA_INICIO_Y + ESPACO_Y, _
-        "Produções Atrasadas", CStr(totalAtrasadas), corAtrasos)
+        "Produções Atrasadas", CStr(totalAtrasadas), corAtrasos, LARGURA_KPI_MENOR)
     
     Set lblKPIHorasPlanejadas = CriaKPI(COLUNA1_X, LINHA_INICIO_Y + 2 * ESPACO_Y, _
-        "Total de Horas Planejadas", Format(totalHorasPlanejadas, "0.00"), COR_TEXTO_ESCURO)
+        "Total de Horas Planejadas", Format(totalHorasPlanejadas, "0.00"), COR_TEXTO_ESCURO, LARGURA_KPI)
     
     Set lblKPIHorasRealizadas = CriaKPI(COLUNA2_X, LINHA_INICIO_Y + 2 * ESPACO_Y, _
-        "Total de Horas Realizadas", Format(totalHorasRealizadas, "0.00"), COR_TEXTO_ESCURO)
+        "Total de Horas Realizadas", Format(totalHorasRealizadas, "0.00"), COR_TEXTO_ESCURO, LARGURA_KPI_MENOR)
     
 Sair:
     Exit Sub
     
-ErroCarregarDashboard:
-    MsgBox "Erro ao carregar Dashboard: " & Err.Description, _
-           vbCritical + vbOKOnly, "APS PURAN – Dashboard"
+ErroAjustar:
     Resume Sair
 End Sub
 
@@ -391,7 +601,8 @@ End Sub
 '================================================================================
 Private Function CriaKPI(pLeft As Single, pTop As Single, _
                          pTitulo As String, pValor As String, _
-                         pCorValor As Long) As MSForms.Label
+                         pCorValor As Long, _
+                         Optional pLargura As Single = 0) As MSForms.Label
     Dim lbl As MSForms.Label
     Dim lblValor As MSForms.Label
     Dim lblTituloKPI As MSForms.Label
@@ -399,12 +610,15 @@ Private Function CriaKPI(pLeft As Single, pTop As Single, _
     Dim uniqueID As String
     uniqueID = Format(Now, "SSSSS") & "_" & CStr(Int(Rnd * 100000))
     
+    Dim larguraUsada As Single
+    larguraUsada = IIf(pLargura > 0, pLargura, LARGURA_KPI)
+    
     Set lbl = fraConteudo.Controls.Add("Forms.Label.1", "lblKPI_" & uniqueID, True)
     With lbl
         .Left = pLeft
         .Top = pTop
-        .Width = 320
-        .Height = 100
+        .Width = larguraUsada
+        .Height = ALTURA_KPI
         .BackColor = vbWhite
         .BorderStyle = fmBorderStyleSingle
     End With
@@ -414,7 +628,7 @@ Private Function CriaKPI(pLeft As Single, pTop As Single, _
         .Caption = pTitulo
         .Left = pLeft + 10
         .Top = pTop + 10
-        .Width = 300
+        .Width = larguraUsada - 20
         .Height = 30
         .Font.Size = 10
         .Font.Bold = True
@@ -428,7 +642,7 @@ Private Function CriaKPI(pLeft As Single, pTop As Single, _
         .Caption = pValor
         .Left = pLeft + 10
         .Top = pTop + 45
-        .Width = 300
+        .Width = larguraUsada - 20
         .Height = 40
         .Font.Size = 20
         .Font.Bold = True
@@ -492,6 +706,53 @@ Private Sub m_btnConfigEvents_Clicked()
     btnConfig_Click
 End Sub
 
+Private Sub btnMinimizar_Click()
+    On Error Resume Next
+    Dim hWnd As LongPtr
+    #If VBA7 Then
+        hWnd = Me.hWnd
+    #Else
+        hWnd = GetActiveWindow()
+    #End If
+    If hWnd <> 0 Then
+        ShowWindow hWnd, SW_MINIMIZE
+    End If
+End Sub
+
+Private Sub btnMaximizar_Click()
+    On Error Resume Next
+    Dim hWnd As LongPtr
+    #If VBA7 Then
+        hWnd = Me.hWnd
+    #Else
+        hWnd = GetActiveWindow()
+    #End If
+    If hWnd <> 0 Then
+        If m_Maximizado Then
+            ShowWindow hWnd, SW_RESTORE
+            Me.Width = m_TamanhoNormalLargura
+            Me.Height = m_TamanhoNormalAltura
+            Me.Left = m_TamanhoNormalLeft
+            Me.Top = m_TamanhoNormalTop
+            m_Maximizado = False
+            btnMaximizar.Caption = ChrW(9633)
+        Else
+            m_TamanhoNormalLargura = Me.Width
+            m_TamanhoNormalAltura = Me.Height
+            m_TamanhoNormalLeft = Me.Left
+            m_TamanhoNormalTop = Me.Top
+            ShowWindow hWnd, SW_MAXIMIZE
+            m_Maximizado = True
+            btnMaximizar.Caption = ChrW(9634)
+        End If
+    End If
+End Sub
+
+Private Sub btnFechar_Click()
+    On Error Resume Next
+    UserForm_QueryClose 0, vbFormControlMenu
+End Sub
+
 '================================================================================
 ' EVENTO: UserForm_QueryClose
 ' PROPÓSITO: Confirmação de saída segura e restauração do Excel
@@ -506,5 +767,40 @@ Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
         Else
             Application.Visible = True
         End If
+    End If
+End Sub
+
+Private Sub UserForm_Resize()
+    On Error Resume Next
+    
+    Dim menuLargura As Single
+    Dim margem As Single
+    
+    menuLargura = 160
+    margem = 12
+    
+    ' Limita tamanho mínimo para não quebrar o layout
+    If Me.ClientWidth < 600 Then Me.ClientWidth = 600
+    If Me.ClientHeight < 500 Then Me.ClientHeight = 500
+    
+    fraMenu.Height = Me.ClientHeight - 72 - margem
+    
+    ' Garante que o painel de conteúdo nunca invada a área do menu lateral
+    fraConteudo.Left = margem + menuLargura + margem
+    fraConteudo.Width = Me.ClientWidth - fraConteudo.Left - margem
+    If fraConteudo.Width < 400 Then fraConteudo.Width = 400
+    fraConteudo.Height = fraMenu.Height
+    lblTitulo.Width = Me.ClientWidth - margem * 2
+    
+    ' Reposiciona botões de controle da janela
+    If Not btnMinimizar Is Nothing Then
+        btnMinimizar.Left = Me.ClientWidth - 90
+        btnMaximizar.Left = Me.ClientWidth - 60
+        btnFechar.Left = Me.ClientWidth - 30
+    End If
+    
+    ' Ajusta layout dos KPIs se houver dados carregados
+    If m_PainelAtivo = "Dashboard" And Not IsEmpty(m_DadosKPIs) Then
+        RenderizarKPIs
     End If
 End Sub
