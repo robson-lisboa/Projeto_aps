@@ -109,6 +109,7 @@ Private btnFechar As MSForms.CommandButton
 ' Área de produção (planejamento temporal)
 Private fraProducao As MSForms.Frame
 Private hScrollProducao As MSForms.ScrollBar
+Private m_CardEvents As Collection
 
 ' Controles do cabeçalho de planejamento
 Private cmdHoje As MSForms.CommandButton
@@ -681,7 +682,8 @@ Public Sub CarregarPlanejamento()
     hScrollProducao.Top = Me.ClientHeight - 96 - 20
     hScrollProducao.Width = Me.ClientWidth - 196
     
-    Call modGantt.CarregarGantt(fraProducao, hScrollProducao, m_DataInicioPeriodo, m_DataFimPeriodo, m_Zoom)
+    Set m_CardEvents = New Collection
+    Call modGantt.CarregarGantt(fraProducao, hScrollProducao, m_DataInicioPeriodo, m_DataFimPeriodo, m_Zoom, m_CardEvents)
     
 Sair:
     Exit Sub
@@ -1195,4 +1197,31 @@ Private Sub UserForm_Resize()
         End If
         Call CarregarPlanejamento
     End If
+End Sub
+
+Private Sub UserForm_MouseDown(ByVal Button As Integer, ByVal Shift As Integer, ByVal X As Single, ByVal Y As Single)
+    On Error Resume Next
+    
+    If m_PainelAtivo <> "Planejamento" Then Exit Sub
+    If fraProducao Is Nothing Then Exit Sub
+    
+    Dim ctrl As MSForms.Control
+    Dim relX As Single
+    Dim relY As Single
+    
+    relX = X - fraProducao.Left
+    relY = Y - fraProducao.Top
+    
+    For Each ctrl In fraProducao.Controls
+        If TypeOf ctrl Is MSForms.Label Then
+            If ctrl.Tag <> "" Then
+                If relX >= ctrl.Left And relX <= ctrl.Left + ctrl.Width And _
+                   relY >= ctrl.Top And relY <= ctrl.Top + ctrl.Height Then
+                    frmDetalheOP.CarregarDetalhes ctrl.Tag
+                    frmDetalheOP.Show vbModeless
+                    Exit Sub
+                End If
+            End If
+        End If
+    Next ctrl
 End Sub
