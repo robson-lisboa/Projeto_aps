@@ -94,6 +94,7 @@ Private btnPlanejamento As MSForms.CommandButton
 Private btnSimulacao As MSForms.CommandButton
 Private btnComparar As MSForms.CommandButton
 Private btnCapacidade As MSForms.CommandButton
+Private btnRelatorios As MSForms.CommandButton
 
 Private m_btnDashboardEvents As clsButtonEvents
 Private m_btnTimelineEvents As clsButtonEvents
@@ -106,6 +107,7 @@ Private m_btnConfigEvents As clsButtonEvents
 Private m_btnSimulacaoEvents As clsButtonEvents
 Private m_btnCompararEvents As clsButtonEvents
 Private m_btnCapacidadeEvents As clsButtonEvents
+Private m_btnRelatoriosEvents As clsButtonEvents
 
 Private fraMenu As MSForms.Frame
 Private fraConteudo As MSForms.Frame
@@ -280,7 +282,7 @@ Private Sub UserForm_Initialize()
     End With
     
     '--- Cria Botões de Navegação ----------------------------------------------
-    botoes = Array("btnDashboard", "btnTimeline", "btnCards", "btnPlanejamento", "btnSimulacao", "btnComparar", "btnCapacidade", "btnProducao", "btnEventos", "btnCadastros", "btnConfig")
+    botoes = Array("btnDashboard", "btnTimeline", "btnCards", "btnPlanejamento", "btnSimulacao", "btnComparar", "btnCapacidade", "btnRelatorios", "btnProducao", "btnEventos", "btnCadastros", "btnConfig")
     posY = 12
     
     For i = LBound(botoes) To UBound(botoes)
@@ -295,10 +297,11 @@ Private Sub UserForm_Initialize()
             IIf(i = 4, "Simulação", _
             IIf(i = 5, "Comparar", _
             IIf(i = 6, "Capacidade", _
-            IIf(i = 7, "Produção", _
-            IIf(i = 8, "Eventos", _
-            IIf(i = 9, "Cadastros", _
-            IIf(i = 10, "Configurações", ""))))))))))
+            IIf(i = 7, "Relatórios", _
+            IIf(i = 8, "Produção", _
+            IIf(i = 9, "Eventos", _
+            IIf(i = 10, "Cadastros", _
+            IIf(i = 11, "Configurações", "")))))))))))
         btn.Left = ESPACAMENTO
         btn.Top = posY
         btn.Width = LARGURA_BOTAO - (2 * ESPACAMENTO)
@@ -318,6 +321,7 @@ Private Sub UserForm_Initialize()
             Case "btnSimulacao": Set btnSimulacao = btn
             Case "btnComparar": Set btnComparar = btn
             Case "btnCapacidade": Set btnCapacidade = btn
+            Case "btnRelatorios": Set btnRelatorios = btn
             Case "btnProducao": Set btnProducao = btn
             Case "btnEventos": Set btnEventos = btn
             Case "btnCadastros": Set btnCadastros = btn
@@ -357,6 +361,9 @@ Private Sub UserForm_Initialize()
     
     Set m_btnCapacidadeEvents = New clsButtonEvents
     Set m_btnCapacidadeEvents.Button = btnCapacidade
+    
+    Set m_btnRelatoriosEvents = New clsButtonEvents
+    Set m_btnRelatoriosEvents.Button = btnRelatorios
     
     '--- Cria Frame de Conteúdo Central -----------------------------------------
     Set fraConteudo = Me.Controls.Add("Forms.Frame.1", "fraConteudo", True)
@@ -1082,6 +1089,10 @@ Private Sub btnCapacidade_Click()
     frmCapacidade.Show vbModeless
 End Sub
 
+Private Sub btnRelatorios_Click()
+    frmRelatorios.Show vbModeless
+End Sub
+
 Private Sub m_btnSimulacaoEvents_Clicked()
     btnSimulacao_Click
 End Sub
@@ -1092,6 +1103,10 @@ End Sub
 
 Private Sub m_btnCapacidadeEvents_Clicked()
     btnCapacidade_Click
+End Sub
+
+Private Sub m_btnRelatoriosEvents_Clicked()
+    btnRelatorios_Click
 End Sub
 
 Private Sub m_btnCadastrosEvents_Clicked()
