@@ -16,6 +16,20 @@ Public Const ALTURA_LINHA_POSTO As Single = 80
 Public Const MARGEM_ESQUERDA As Single = 120
 
 '--------------------------------------------------------------------------------
+' CONSTANTES DE COR
+'--------------------------------------------------------------------------------
+Private Const COR_TEXTO_CLARO As Long = 16777215
+Private Const COR_CABECALHO As Long = 3355443
+Private Const COR_CINZA_LINHA As Long = 16777215
+Private Const COR_FUNDO_TIMELINE As Long = 14211288
+Private Const COR_TEXTO_ESCURO As Long = 0
+Private Const COR_ALERTA As Long = 255
+Private Const COR_CINZA_ATRASO As Long = 10092543
+Private Const COR_AZUL As Long = 15773696
+Private Const COR_CINZA_CARD As Long = 16777215
+Private Const COR_HEADER As Long = 3355443
+
+'--------------------------------------------------------------------------------
 ' TIPO: EscalaTemporal
 ' PROPÓSITO: Armazenar configurações de escala temporal
 '--------------------------------------------------------------------------------
