@@ -435,7 +435,6 @@ Private Sub CriarControles()
         .Width = 360
         .Height = 22
         .Font.Size = 9
-        .Enabled = False
     End With
     topCampo = topCampo + 26
     
@@ -666,6 +665,7 @@ Private Sub LimparCampos()
     lblStatus.Caption = ""
     lblTempoDecorrido.Caption = "Tempo: 00:00:00"
     m_ID_ProducaoAtiva = ""
+    m_ID_ParadaAtiva = ""
 End Sub
 
 Private Sub PreencherCamposProducao(pID_Producao As String)
@@ -700,6 +700,39 @@ Private Sub PreencherCamposProducao(pID_Producao As String)
     Next i
 End Sub
 
+Private Sub txtID_OP_Change()
+    On Error Resume Next
+    
+    Dim idOP As String
+    idOP = Trim(txtID_OP.Text)
+    
+    If idOP = "" Then
+        txtProduto.Text = ""
+        txtEquipamento.Text = ""
+        txtQtdPlanejada.Text = ""
+        txtDataInicio.Text = ""
+        txtDataFim.Text = ""
+        Exit Sub
+    End If
+    
+    Dim dadosOP As Variant
+    dadosOP = BuscarOPPorID(idOP)
+    
+    If IsEmpty(dadosOP) Then
+        txtProduto.Text = "OP não encontrada"
+        txtEquipamento.Text = ""
+        txtQtdPlanejada.Text = ""
+        txtDataInicio.Text = ""
+        txtDataFim.Text = ""
+    Else
+        txtProduto.Text = CStr(dadosOP(1))
+        txtEquipamento.Text = CStr(dadosOP(2))
+        txtQtdPlanejada.Text = CStr(dadosOP(3))
+        If IsDate(dadosOP(4)) Then txtDataInicio.Text = Format(CDate(dadosOP(4)), "dd/mm/yyyy")
+        If IsDate(dadosOP(5)) Then txtDataFim.Text = Format(CDate(dadosOP(5)), "dd/mm/yyyy")
+    End If
+End Sub
+
 '================================================================================
 ' EVENTOS DOS BOTÕES ===========================================================
 '================================================================================
@@ -712,18 +745,31 @@ Private Sub btnIniciar_Click()
     Dim operador As String
     Dim qtdPlanejada As Long
     
-    idOP = InputBox("ID da OP:", "Iniciar Produção")
-    If Trim(idOP) = "" Then Exit Sub
+    idOP = Trim(txtID_OP.Text)
+    If idOP = "" Then
+        MsgBox "Informe a ID da OP.", vbExclamation, "Validação"
+        txtID_OP.SetFocus
+        Exit Sub
+    End If
     
-    equipamento = InputBox("Equipamento/Posto:", "Iniciar Produção")
-    If Trim(equipamento) = "" Then Exit Sub
+    If txtProduto.Text = "OP não encontrada" Or txtProduto.Text = "" Then
+        MsgBox "OP não encontrada. Verifique o ID informado.", vbCritical, "Validação"
+        txtID_OP.SetFocus
+        Exit Sub
+    End If
     
-    operador = InputBox("Operador:", "Iniciar Produção")
-    If Trim(operador) = "" Then operador = "NÃO INFORMADO"
+    equipamento = Trim(txtEquipamento.Text)
+    If equipamento = "" Then
+        MsgBox "Equipamento não carregado da OP.", vbCritical, "Validação"
+        Exit Sub
+    End If
+    
+    operador = Trim(txtOperador.Text)
+    If operador = "" Then operador = "NÃO INFORMADO"
     
     qtdPlanejada = 0
     On Error Resume Next
-    qtdPlanejada = CLng(InputBox("Quantidade Planejada:", "Iniciar Produção"))
+    qtdPlanejada = CLng(txtQtdPlanejada.Text)
     If qtdPlanejada <= 0 Then qtdPlanejada = 0
     On Error GoTo ErroIniciar
     
@@ -802,12 +848,12 @@ Private Sub btnFinalizar_Click()
     qtdRejeitada = 0
     
     On Error Resume Next
-    qtdProduzida = CLng(InputBox("Quantidade Produzida:", "Finalizar Produção"))
+    qtdProduzida = CLng(txtQtdProduzida.Text)
     If qtdProduzida < 0 Then qtdProduzida = 0
     On Error GoTo ErroFinalizar
     
     On Error Resume Next
-    qtdRejeitada = CLng(InputBox("Quantidade Rejeitada:", "Finalizar Produção"))
+    qtdRejeitada = CLng(txtQtdRejeitada.Text)
     If qtdRejeitada < 0 Then qtdRejeitada = 0
     On Error GoTo ErroFinalizar
     
@@ -846,7 +892,7 @@ Private Sub btnRegistrarParada_Click()
     observacao = InputBox("Observação (opcional):", "Registrar Parada")
     idParada = "PAR_" & Format(Now, "yyyymmdd_hhmmss")
     
-    Call RegistrarParada(idParada, txtID_OP.Text, txtEquipamento.Text, txtOperador.Text, motivo, observacao)
+    Call RegistrarParada(idParada, Trim(txtID_OP.Text), Trim(txtEquipamento.Text), Trim(txtOperador.Text), motivo, observacao)
     MsgBox "Parada registrada!", vbInformation, "APS PURAN"
     
     Call CarregarParadas

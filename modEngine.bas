@@ -945,6 +945,48 @@ ErroIndicadores:
     Resume Sair
 End Sub
 
+'--------------------------------------------------------------------------------
+' FUNÇÃO: BuscarOPPorID
+' PROPÓSITO: Buscar uma OP específica na TabelaOPs pelo ID
+' RETORNO: Variant Array com os dados da OP (1=ID, 2=Produto, 3=Equipamento, 4=Quantidade, 5=Data_Inicio, 6=Data_Fim)
+'          ou Empty se não encontrada
+'--------------------------------------------------------------------------------
+Public Function BuscarOPPorID(pID_OP As String) As Variant
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim dados As Variant
+    Dim i As Long, totalLinhas As Long
+    
+    On Error GoTo ErroBuscar
+    
+    If Trim(pID_OP) = "" Then
+        BuscarOPPorID = Empty
+        Exit Function
+    End If
+    
+    Set ws = ThisWorkbook.Worksheets("BD_OPs")
+    Set tbl = ws.ListObjects("TabelaOPs")
+    
+    dados = tbl.Range.Value
+    totalLinhas = UBound(dados, 1)
+    
+    For i = 2 To totalLinhas
+        If Trim(CStr(dados(i, 1))) = Trim(pID_OP) Then
+            BuscarOPPorID = Array(dados(i, 1), dados(i, 2), dados(i, 3), dados(i, 4), dados(i, 5), dados(i, 6))
+            Exit Function
+        End If
+    Next i
+    
+    BuscarOPPorID = Empty
+    
+Sair:
+    Exit Function
+    
+ErroBuscar:
+    BuscarOPPorID = Empty
+    Resume Sair
+End Function
+
 '================================================================================
 ' MÓDULO DE PRODUÇÃO REAL
 '================================================================================
