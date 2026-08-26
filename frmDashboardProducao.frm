@@ -4,11 +4,11 @@ BEGIN
   BackColor = 14211288
   BorderStyle = 3
   Caption = "APS PURAN – Dashboard Produção Real"
-  ClientHeight = 650
+  ClientHeight = 700
   ClientLeft = 2268
   ClientTop = 1128
   ClientWidth = 900
-  Height = 688
+  Height = 738
   Left = 2268
   ScaleMode = 3
   Top = 1128
@@ -49,9 +49,13 @@ Private btnFechar As MSForms.CommandButton
 
 '=== CONTAINERS =================================================================
 Private fraKPIs As MSForms.Frame
+Private fraMetaRealizado As MSForms.Frame
+Private fraEficienciaOEE As MSForms.Frame
 Private fraProducaoEquip As MSForms.Frame
 Private fraProducaoOperador As MSForms.Frame
 Private fraParadas As MSForms.Frame
+Private fraAlertas As MSForms.Frame
+Private fraScroll As MSForms.Frame
 
 '=== ESTADO =====================================================================
 Private m_PeriodoInicio As Date
@@ -276,14 +280,56 @@ Private Sub CriarControles()
         .ForeColor = COR_TEXTO_CLARO
     End With
     
+    '--- Container Scroll -------------------------------------------------------
+    Set fraScroll = Me.Controls.Add("Forms.Frame.1", "fraScroll", True)
+    With fraScroll
+        .Caption = ""
+        .Left = 12
+        .Top = 120
+        .Width = 860
+        .Height = 540
+        .BackColor = COR_FUNDO
+        .BorderStyle = fmBorderStyleSingle
+        .ScrollBars = fmScrollBarsVertical
+        .ScrollHeight = 2000
+    End With
+    
     '--- Container KPIs ---------------------------------------------------------
     Set fraKPIs = Me.Controls.Add("Forms.Frame.1", "fraKPIs", True)
     With fraKPIs
         .Caption = "INDICADORES PRINCIPAIS"
-        .Left = 12
-        .Top = 120
-        .Width = 860
-        .Height = 140
+        .Left = 10
+        .Top = 10
+        .Width = 830
+        .Height = 120
+        .BackColor = COR_FUNDO
+        .BorderStyle = fmBorderStyleSingle
+        .Font.Size = 9
+        .Font.Bold = True
+    End With
+    
+    '--- Container Meta x Realizado ---------------------------------------------
+    Set fraMetaRealizado = Me.Controls.Add("Forms.Frame.1", "fraMetaRealizado", True)
+    With fraMetaRealizado
+        .Caption = "META x REALIZADO"
+        .Left = 10
+        .Top = 140
+        .Width = 400
+        .Height = 100
+        .BackColor = COR_FUNDO
+        .BorderStyle = fmBorderStyleSingle
+        .Font.Size = 9
+        .Font.Bold = True
+    End With
+    
+    '--- Container Eficiência/OEE -----------------------------------------------
+    Set fraEficienciaOEE = Me.Controls.Add("Forms.Frame.1", "fraEficienciaOEE", True)
+    With fraEficienciaOEE
+        .Caption = "EFICIÊNCIA / OEE"
+        .Left = 420
+        .Top = 140
+        .Width = 420
+        .Height = 100
         .BackColor = COR_FUNDO
         .BorderStyle = fmBorderStyleSingle
         .Font.Size = 9
@@ -294,10 +340,10 @@ Private Sub CriarControles()
     Set fraProducaoEquip = Me.Controls.Add("Forms.Frame.1", "fraProducaoEquip", True)
     With fraProducaoEquip
         .Caption = "PRODUÇÃO POR EQUIPAMENTO"
-        .Left = 12
-        .Top = 270
-        .Width = 420
-        .Height = 160
+        .Left = 10
+        .Top = 250
+        .Width = 400
+        .Height = 180
         .BackColor = COR_FUNDO
         .BorderStyle = fmBorderStyleSingle
         .Font.Size = 9
@@ -308,10 +354,10 @@ Private Sub CriarControles()
     Set fraProducaoOperador = Me.Controls.Add("Forms.Frame.1", "fraProducaoOperador", True)
     With fraProducaoOperador
         .Caption = "PRODUÇÃO POR OPERADOR"
-        .Left = 450
-        .Top = 270
+        .Left = 420
+        .Top = 250
         .Width = 420
-        .Height = 160
+        .Height = 180
         .BackColor = COR_FUNDO
         .BorderStyle = fmBorderStyleSingle
         .Font.Size = 9
@@ -321,11 +367,25 @@ Private Sub CriarControles()
     '--- Container Paradas ------------------------------------------------------
     Set fraParadas = Me.Controls.Add("Forms.Frame.1", "fraParadas", True)
     With fraParadas
-        .Caption = "PARADAS"
-        .Left = 12
+        .Caption = "ANÁLISE DE PARADAS"
+        .Left = 10
         .Top = 440
-        .Width = 860
-        .Height = 160
+        .Width = 830
+        .Height = 180
+        .BackColor = COR_FUNDO
+        .BorderStyle = fmBorderStyleSingle
+        .Font.Size = 9
+        .Font.Bold = True
+    End With
+    
+    '--- Container Alertas ------------------------------------------------------
+    Set fraAlertas = Me.Controls.Add("Forms.Frame.1", "fraAlertas", True)
+    With fraAlertas
+        .Caption = "ALERTAS OPERACIONAIS"
+        .Left = 10
+        .Top = 630
+        .Width = 830
+        .Height = 120
         .BackColor = COR_FUNDO
         .BorderStyle = fmBorderStyleSingle
         .Font.Size = 9
@@ -742,6 +802,324 @@ Private Sub RenderizarParadas(pDashboard As clsDashboardProducao)
             .Height = 18
             .Font.Size = 9
             .ForeColor = COR_TEXTO_ESCURO
+            .BackColor = COR_FUNDO
+        End With
+        
+        topPos = topPos + 20
+    Next chave
+End Sub
+
+Private Sub RenderizarMetaRealizado(pDashboard As clsDashboardProducao)
+    On Error Resume Next
+    
+    Dim ctrl As MSForms.Control
+    For Each ctrl In fraMetaRealizado.Controls
+        fraMetaRealizado.Controls.Remove ctrl.Name
+    Next ctrl
+    
+    Dim topPos As Single
+    topPos = 20
+    
+    ' META
+    Dim lblMeta As MSForms.Label
+    Set lblMeta = fraMetaRealizado.Controls.Add("Forms.Label.1", "lblMeta", True)
+    With lblMeta
+        .Caption = "META"
+        .Left = 20
+        .Top = topPos
+        .Width = 170
+        .Height = 18
+        .Font.Size = 9
+        .Font.Bold = True
+        .ForeColor = COR_TEXTO_ESCURO
+        .BackColor = COR_FUNDO
+    End With
+    
+    Dim lblMetaValor As MSForms.Label
+    Set lblMetaValor = fraMetaRealizado.Controls.Add("Forms.Label.1", "lblMetaValor", True)
+    With lblMetaValor
+        .Caption = CStr(pDashboard.QuantidadePlanejada)
+        .Left = 20
+        .Top = topPos + 20
+        .Width = 170
+        .Height = 18
+        .Font.Size = 10
+        .Font.Bold = True
+        .ForeColor = COR_AZUL
+        .BackColor = COR_FUNDO
+    End With
+    
+    ' REALIZADO
+    Dim lblRealizado As MSForms.Label
+    Set lblRealizado = fraMetaRealizado.Controls.Add("Forms.Label.1", "lblRealizado", True)
+    With lblRealizado
+        .Caption = "REALIZADO"
+        .Left = 200
+        .Top = topPos
+        .Width = 170
+        .Height = 18
+        .Font.Size = 9
+        .Font.Bold = True
+        .ForeColor = COR_TEXTO_ESCURO
+        .BackColor = COR_FUNDO
+    End With
+    
+    Dim lblRealizadoValor As MSForms.Label
+    Set lblRealizadoValor = fraMetaRealizado.Controls.Add("Forms.Label.1", "lblRealizadoValor", True)
+    With lblRealizadoValor
+        .Caption = CStr(pDashboard.QuantidadeProduzida)
+        .Left = 200
+        .Top = topPos + 20
+        .Width = 170
+        .Height = 18
+        .Font.Size = 10
+        .Font.Bold = True
+        .ForeColor = COR_VERDE
+        .BackColor = COR_FUNDO
+    End With
+    
+    ' SALDO
+    Dim lblSaldo As MSForms.Label
+    Set lblSaldo = fraMetaRealizado.Controls.Add("Forms.Label.1", "lblSaldo", True)
+    With lblSaldo
+        .Caption = "SALDO A PRODUZIR"
+        .Left = 20
+        .Top = topPos + 45
+        .Width = 170
+        .Height = 18
+        .Font.Size = 9
+        .Font.Bold = True
+        .ForeColor = COR_TEXTO_ESCURO
+        .BackColor = COR_FUNDO
+    End With
+    
+    Dim lblSaldoValor As MSForms.Label
+    Set lblSaldoValor = fraMetaRealizado.Controls.Add("Forms.Label.1", "lblSaldoValor", True)
+    With lblSaldoValor
+        .Caption = CStr(pDashboard.SaldoProduzir)
+        .Left = 20
+        .Top = topPos + 65
+        .Width = 170
+        .Height = 18
+        .Font.Size = 10
+        .Font.Bold = True
+        .ForeColor = IIf(pDashboard.SaldoProduzir > 0, COR_ALERTA, COR_VERDE)
+        .BackColor = COR_FUNDO
+    End With
+    
+    ' % ATINGIDO
+    Dim lblPercentual As MSForms.Label
+    Set lblPercentual = fraMetaRealizado.Controls.Add("Forms.Label.1", "lblPercentual", True)
+    With lblPercentual
+        .Caption = "% ATINGIDO"
+        .Left = 200
+        .Top = topPos + 45
+        .Width = 170
+        .Height = 18
+        .Font.Size = 9
+        .Font.Bold = True
+        .ForeColor = COR_TEXTO_ESCURO
+        .BackColor = COR_FUNDO
+    End With
+    
+    Dim lblPercentualValor As MSForms.Label
+    Set lblPercentualValor = fraMetaRealizado.Controls.Add("Forms.Label.1", "lblPercentualValor", True)
+    With lblPercentualValor
+        .Caption = Format(pDashboard.PercentualAtingido, "0.0") & "%"
+        .Left = 200
+        .Top = topPos + 65
+        .Width = 170
+        .Height = 18
+        .Font.Size = 10
+        .Font.Bold = True
+        .ForeColor = IIf(pDashboard.PercentualAtingido >= 100, COR_VERDE, COR_AMARELO)
+        .BackColor = COR_FUNDO
+    End With
+End Sub
+
+Private Sub RenderizarEficienciaOEE(pDashboard As clsDashboardProducao)
+    On Error Resume Next
+    
+    Dim ctrl As MSForms.Control
+    For Each ctrl In fraEficienciaOEE.Controls
+        fraEficienciaOEE.Controls.Remove ctrl.Name
+    Next ctrl
+    
+    Dim topPos As Single
+    topPos = 20
+    
+    ' Eficiência
+    Dim lblEficiencia As MSForms.Label
+    Set lblEficiencia = fraEficienciaOEE.Controls.Add("Forms.Label.1", "lblEficiencia", True)
+    With lblEficiencia
+        .Caption = "EFICIÊNCIA"
+        .Left = 20
+        .Top = topPos
+        .Width = 190
+        .Height = 18
+        .Font.Size = 9
+        .Font.Bold = True
+        .ForeColor = COR_TEXTO_ESCURO
+        .BackColor = COR_FUNDO
+    End With
+    
+    Dim lblEficienciaValor As MSForms.Label
+    Set lblEficienciaValor = fraEficienciaOEE.Controls.Add("Forms.Label.1", "lblEficienciaValor", True)
+    With lblEficienciaValor
+        .Caption = Format(pDashboard.EficienciaProducao, "0.0") & "%"
+        .Left = 20
+        .Top = topPos + 20
+        .Width = 190
+        .Height = 18
+        .Font.Size = 10
+        .Font.Bold = True
+        .ForeColor = IIf(pDashboard.EficienciaProducao >= 100, COR_VERDE, COR_AMARELO)
+        .BackColor = COR_FUNDO
+    End With
+    
+    ' Qtd/Hora
+    Dim lblQtdHora As MSForms.Label
+    Set lblQtdHora = fraEficienciaOEE.Controls.Add("Forms.Label.1", "lblQtdHora", True)
+    With lblQtdHora
+        .Caption = "QTD/HORA"
+        .Left = 220
+        .Top = topPos
+        .Width = 190
+        .Height = 18
+        .Font.Size = 9
+        .Font.Bold = True
+        .ForeColor = COR_TEXTO_ESCURO
+        .BackColor = COR_FUNDO
+    End With
+    
+    Dim lblQtdHoraValor As MSForms.Label
+    Set lblQtdHoraValor = fraEficienciaOEE.Controls.Add("Forms.Label.1", "lblQtdHoraValor", True)
+    With lblQtdHoraValor
+        .Caption = Format(pDashboard.QuantidadePorHora, "0.0")
+        .Left = 220
+        .Top = topPos + 20
+        .Width = 190
+        .Height = 18
+        .Font.Size = 10
+        .Font.Bold = True
+        .ForeColor = COR_AZUL
+        .BackColor = COR_FUNDO
+    End With
+    
+    ' Disponibilidade
+    Dim lblDisp As MSForms.Label
+    Set lblDisp = fraEficienciaOEE.Controls.Add("Forms.Label.1", "lblDisp", True)
+    With lblDisp
+        .Caption = "DISPONIBILIDADE"
+        .Left = 20
+        .Top = topPos + 45
+        .Width = 190
+        .Height = 18
+        .Font.Size = 9
+        .Font.Bold = True
+        .ForeColor = COR_TEXTO_ESCURO
+        .BackColor = COR_FUNDO
+    End With
+    
+    Dim lblDispValor As MSForms.Label
+    Set lblDispValor = fraEficienciaOEE.Controls.Add("Forms.Label.1", "lblDispValor", True)
+    With lblDispValor
+        .Caption = Format(pDashboard.Disponibilidade, "0.0") & "%"
+        .Left = 20
+        .Top = topPos + 65
+        .Width = 190
+        .Height = 18
+        .Font.Size = 10
+        .Font.Bold = True
+        .ForeColor = IIf(pDashboard.Disponibilidade >= 80, COR_VERDE, COR_AMARELO)
+        .BackColor = COR_FUNDO
+    End With
+    
+    ' OEE
+    Dim lblOEE As MSForms.Label
+    Set lblOEE = fraEficienciaOEE.Controls.Add("Forms.Label.1", "lblOEE", True)
+    With lblOEE
+        .Caption = "OEE (parcial)"
+        .Left = 220
+        .Top = topPos + 45
+        .Width = 190
+        .Height = 18
+        .Font.Size = 9
+        .Font.Bold = True
+        .ForeColor = COR_TEXTO_ESCURO
+        .BackColor = COR_FUNDO
+    End With
+    
+    Dim lblOEEValor As MSForms.Label
+    Set lblOEEValor = fraEficienciaOEE.Controls.Add("Forms.Label.1", "lblOEEValor", True)
+    With lblOEEValor
+        .Caption = Format(pDashboard.OEE, "0.0") & "%"
+        .Left = 220
+        .Top = topPos + 65
+        .Width = 190
+        .Height = 18
+        .Font.Size = 10
+        .Font.Bold = True
+        .ForeColor = IIf(pDashboard.OEE >= 85, COR_VERDE, COR_AMARELO)
+        .BackColor = COR_FUNDO
+    End With
+    
+    ' Aviso Performance
+    If Not pDashboard.PerformanceDisponivel Then
+        Dim lblAvisoPerf As MSForms.Label
+        Set lblAvisoPerf = fraEficienciaOEE.Controls.Add("Forms.Label.1", "lblAvisoPerf", True)
+        With lblAvisoPerf
+            .Caption = "Performance indisponível (sem taxa padrão)"
+            .Left = 20
+            .Top = topPos + 85
+            .Width = 390
+            .Height = 16
+            .Font.Size = 8
+            .ForeColor = COR_ALERTA
+            .BackColor = COR_FUNDO
+        End With
+    End If
+End Sub
+
+Private Sub RenderizarAlertas(pDashboard As clsDashboardProducao)
+    On Error Resume Next
+    
+    Dim ctrl As MSForms.Control
+    For Each ctrl In fraAlertas.Controls
+        fraAlertas.Controls.Remove ctrl.Name
+    Next ctrl
+    
+    If pDashboard.Alertas.Count = 0 Then
+        Dim lblSemAlertas As MSForms.Label
+        Set lblSemAlertas = fraAlertas.Controls.Add("Forms.Label.1", "lblSemAlertas", True)
+        With lblSemAlertas
+            .Caption = "Nenhum alerta operacional no período"
+            .Left = 20
+            .Top = 30
+            .Width = 820
+            .Height = 20
+            .Font.Size = 10
+            .ForeColor = COR_TEXTO_ESCURO
+            .BackColor = COR_FUNDO
+        End With
+        Exit Sub
+    End If
+    
+    Dim topPos As Single
+    topPos = 20
+    
+    Dim chave As Variant
+    For Each chave In pDashboard.Alertas.Keys
+        Dim lblAlerta As MSForms.Label
+        Set lblAlerta = fraAlertas.Controls.Add("Forms.Label.1", "lblAlerta_" & CStr(chave), True)
+        With lblAlerta
+            .Caption = "• " & CStr(chave) & ": " & CStr(pDashboard.Alertas(chave))
+            .Left = 20
+            .Top = topPos
+            .Width = 800
+            .Height = 18
+            .Font.Size = 9
+            .ForeColor = COR_ALERTA
             .BackColor = COR_FUNDO
         End With
         
