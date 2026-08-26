@@ -9,11 +9,11 @@ Option Explicit
 '--------------------------------------------------------------------------------
 ' CONSTANTES DE ESCALA
 '--------------------------------------------------------------------------------
-Private Const FATOR_BASE_PIXELS_POR_HORA As Double = 100
-Private Const ZOOM_MIN As Double = 0.5
-Private Const ZOOM_MAX As Double = 3.0
-Private Const ALTURA_LINHA_POSTO As Single = 80
-Private Const MARGEM_ESQUERDA As Single = 120
+Public Const FATOR_BASE_PIXELS_POR_HORA As Double = 100
+Public Const ZOOM_MIN As Double = 0.5
+Public Const ZOOM_MAX As Double = 3.0
+Public Const ALTURA_LINHA_POSTO As Single = 80
+Public Const MARGEM_ESQUERDA As Single = 120
 
 '--------------------------------------------------------------------------------
 ' TIPO: EscalaTemporal

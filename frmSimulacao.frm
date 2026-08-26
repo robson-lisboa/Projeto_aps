@@ -64,7 +64,6 @@ Private m_DragStartX As Single
 Private m_DragStartY As Single
 Private m_DragOriginalLeft As Single
 Private m_DragOriginalTop As Single
-Private m_DragOPIndex As Long
 
 '=== PROPRIEDADES VISUAIS ======================================================
 Private Const COR_FUNDO As Long = 14211288
@@ -1004,14 +1003,13 @@ Private Sub UserForm_MouseDown(ByVal Button As Integer, ByVal Shift As Integer, 
             If ctrl.Tag <> "" Then
                 If relX >= ctrl.Left And relX <= ctrl.Left + ctrl.Width And _
                    relY >= ctrl.Top And relY <= ctrl.Top + ctrl.Height Then
-                    If Button = 1 Then
-                        Set m_DragCard = ctrl
-                        m_DragStartX = X
-                        m_DragStartY = Y
-                        m_DragOriginalLeft = ctrl.Left
-                        m_DragOriginalTop = ctrl.Top
-                        m_DragOPIndex = 0
-                    ElseIf Button = 2 Then
+                     If Button = 1 Then
+                         Set m_DragCard = ctrl
+                         m_DragStartX = X
+                         m_DragStartY = Y
+                         m_DragOriginalLeft = ctrl.Left
+                         m_DragOriginalTop = ctrl.Top
+                     ElseIf Button = 2 Then
                         frmDetalheOP.CarregarDetalhesSimulacao ctrl.Tag, m_ID_SimulacaoAtiva
                         frmDetalheOP.Show vbModal
                         Call CarregarPlanejamentoSimulacao
@@ -1056,6 +1054,7 @@ Private Sub UserForm_MouseUp(ByVal Button As Integer, ByVal Shift As Integer, By
     Dim novoFim As Date
     Dim novaDuracao As Double
     Dim indicePosto As Long
+    Dim novoEquipamento As String
     
     ' Encontra o OP correspondente ao card
     Dim dados() As Variant
@@ -1078,18 +1077,53 @@ Private Sub UserForm_MouseUp(ByVal Button As Integer, ByVal Shift As Integer, By
             Dim dataInicioOP As Date
             Dim dataFimOP As Date
             Dim duracaoOP As Double
+            Dim equipamentoAtual As String
             
             If IsDate(dados(i, 7)) Then dataInicioOP = CDate(dados(i, 7))
             If IsDate(dados(i, 8)) Then dataFimOP = CDate(dados(i, 8))
             duracaoOP = CDbl(dados(i, 9))
+            equipamentoAtual = CStr(dados(i, 5))
             
             ' Calcula novo horário baseado no movimento horizontal
             novaDuracao = duracaoOP
             novoInicio = dataInicioOP + (deltaX / 100) / 24
             novoFim = dataFimOP + (deltaX / 100) / 24
             
-            ' Atualiza Data_Inicio e Data_Fim
-            Call AtualizarOPSimulacao(m_ID_SimulacaoAtiva, idOP, CStr(dados(i, 4)), CStr(dados(i, 5)), CLng(dados(i, 6)), novoInicio, novoFim, novaDuracao, CStr(dados(i, 10)), CStr(dados(i, 11)), CStr(dados(i, 12)))
+            ' Calcula novo posto baseado no movimento vertical
+            Dim colPostos As New Collection
+            Dim j As Long
+            Dim existe As Boolean
+            
+            For j = 2 To UBound(dados, 1)
+                Dim eq As String
+                eq = Trim(CStr(dados(j, 5)))
+                If eq <> "" Then
+                    existe = False
+                    Dim k As Long
+                    For k = 1 To colPostos.Count
+                        If colPostos(k) = eq Then
+                            existe = True
+                            Exit For
+                        End If
+                    Next k
+                    If Not existe Then colPostos.Add eq
+                End If
+            Next j
+            
+            indicePosto = ObterIndicePosto(equipamentoAtual, colPostos)
+            Dim deltaPostos As Long
+            deltaPostos = Round(deltaY / ALTURA_LINHA_POSTO)
+            
+            Dim novoIndicePosto As Long
+            novoIndicePosto = indicePosto + deltaPostos
+            
+            If novoIndicePosto < 0 Then novoIndicePosto = 0
+            If novoIndicePosto >= colPostos.Count Then novoIndicePosto = colPostos.Count - 1
+            
+            novoEquipamento = colPostos(novoIndicePosto + 1)
+            
+            ' Atualiza Data_Inicio, Data_Fim e Equipamento
+            Call AtualizarOPSimulacao(m_ID_SimulacaoAtiva, idOP, CStr(dados(i, 4)), novoEquipamento, CLng(dados(i, 6)), novoInicio, novoFim, novaDuracao, CStr(dados(i, 10)), CStr(dados(i, 11)), CStr(dados(i, 12)))
             
             Exit For
         End If
@@ -1104,33 +1138,6 @@ Sair:
 ErroMouseUp:
     Set m_DragCard = Nothing
     Resume Sair
-End Sub
-
-Private Sub UserForm_MouseDown(ByVal Button As Integer, ByVal Shift As Integer, ByVal X As Single, ByVal Y As Single)
-    On Error Resume Next
-    
-    If fraVisualizacao Is Nothing Then Exit Sub
-    
-    Dim ctrl As MSForms.Control
-    Dim relX As Single
-    Dim relY As Single
-    
-    relX = X - fraVisualizacao.Left
-    relY = Y - fraVisualizacao.Top
-    
-    For Each ctrl In fraVisualizacao.Controls
-        If TypeOf ctrl Is MSForms.Label Then
-            If ctrl.Tag <> "" Then
-                If relX >= ctrl.Left And relX <= ctrl.Left + ctrl.Width And _
-                   relY >= ctrl.Top And relY <= ctrl.Top + ctrl.Height Then
-                    frmDetalheOP.CarregarDetalhesSimulacao ctrl.Tag, m_ID_SimulacaoAtiva
-                    frmDetalheOP.Show vbModal
-                    Call CarregarPlanejamentoSimulacao
-                    Exit Sub
-                End If
-            End If
-        End If
-    Next ctrl
 End Sub
 
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
