@@ -944,6 +944,46 @@ End Sub
 Private Sub SalvarConfiguracoes()
     On Error Resume Next
     
+    ' Validações básicas
+    Dim zoom As Double
+    If Not IsNumeric(txtZoomPadrao.Text) Then
+        txtZoomPadrao.Text = "1.0"
+    Else
+        zoom = CDbl(txtZoomPadrao.Text)
+        If zoom < 0.5 Or zoom > 3# Then txtZoomPadrao.Text = "1.0"
+    End If
+    
+    Dim escala As Double
+    If Not IsNumeric(txtEscalaTimeline.Text) Then
+        txtEscalaTimeline.Text = "100"
+    Else
+        escala = CDbl(txtEscalaTimeline.Text)
+        If escala <= 0 Then txtEscalaTimeline.Text = "100"
+    End If
+    
+    Dim altura As Double
+    If Not IsNumeric(txtAlturaLinhaPosto.Text) Then
+        txtAlturaLinhaPosto.Text = "80"
+    Else
+        altura = CDbl(txtAlturaLinhaPosto.Text)
+        If altura < 40 Or altura > 200 Then txtAlturaLinhaPosto.Text = "80"
+    End If
+    
+    Dim tolerancia As Double
+    If Not IsNumeric(txtToleranciaAtraso.Text) Then
+        txtToleranciaAtraso.Text = "30"
+    Else
+        tolerancia = CDbl(txtToleranciaAtraso.Text)
+        If tolerancia < 0 Or tolerancia > 1440 Then txtToleranciaAtraso.Text = "30"
+    End If
+    
+    If Not IsNumeric(txtAlturaCards.Text) Then
+        txtAlturaCards.Text = "80"
+    Else
+        altura = CDbl(txtAlturaCards.Text)
+        If altura < 40 Or altura > 200 Then txtAlturaCards.Text = "80"
+    End If
+    
     ' Gerais
     Call SalvarConfiguracao("NomeSistema", txtNomeSistema.Text)
     Call SalvarConfiguracao("Empresa", txtEmpresa.Text)
@@ -1056,9 +1096,47 @@ Private Function JsonParse(pJSON As String) As Object
     On Error Resume Next
     
     Dim json As Object
-    Set json = CreateObject("ScriptControl")
-    json.Language = "JScript"
-    Set JsonParse = json.Eval("(" & pJSON & ")")
+    Set json = CreateObject("Scripting.Dictionary")
+    
+    Dim conteudo As String
+    conteudo = Trim(pJSON)
+    
+    If Left(conteudo, 1) = "{" And Right(conteudo, 1) = "}" Then
+        conteudo = Mid(conteudo, 2, Len(conteudo) - 2)
+    End If
+    
+    Dim pares() As String
+    pares = Split(conteudo, ",")
+    
+    Dim i As Long
+    For i = 0 To UBound(pares)
+        Dim par As String
+        par = Trim(pares(i))
+        
+        Dim doisPontos As Long
+        doisPontos = InStr(par, ":")
+        
+        If doisPontos > 0 Then
+            Dim chave As String
+            Dim valor As String
+            
+            chave = Trim(Mid(par, 1, doisPontos - 1))
+            If Left(chave, 1) = """" And Right(chave, 1) = """" Then
+                chave = Mid(chave, 2, Len(chave) - 2)
+            End If
+            
+            valor = Trim(Mid(par, doisPontos + 1))
+            If Left(valor, 1) = """" And Right(valor, 1) = """" Then
+                valor = Mid(valor, 2, Len(valor) - 2)
+            End If
+            
+            If chave <> "" Then
+                json(chave) = valor
+            End If
+        End If
+    Next i
+    
+    Set JsonParse = json
     
     On Error GoTo 0
 End Function
