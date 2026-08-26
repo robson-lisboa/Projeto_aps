@@ -360,7 +360,7 @@ Private Sub CriarCardCapacidade(pContainer As MSForms.Frame, pItem As clsCapacid
     ' Preenchimento da barra
     Dim larguraBarra As Single
     If pItem.HorasDisponiveis > 0 Then
-        larguraBarra = (pItem.Width - 40) * (Application.WorksheetFunction.Min(pItem.PercentualOcupacao, 100) / 100)
+        larguraBarra = (pContainer.Width - 40) * (Application.WorksheetFunction.Min(pItem.PercentualOcupacao, 100) / 100)
     Else
         larguraBarra = 0
     End If
