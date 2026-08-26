@@ -87,6 +87,7 @@ Private btnDashboard As MSForms.CommandButton
 Private btnTimeline As MSForms.CommandButton
 Private btnCards As MSForms.CommandButton
 Private btnProducao As MSForms.CommandButton
+Private btnDashboardProducao As MSForms.CommandButton
 Private btnEventos As MSForms.CommandButton
 Private btnCadastros As MSForms.CommandButton
 Private btnConfig As MSForms.CommandButton
@@ -101,6 +102,7 @@ Private m_btnTimelineEvents As clsButtonEvents
 Private m_btnCardsEvents As clsButtonEvents
 Private m_btnPlanejamentoEvents As clsButtonEvents
 Private m_btnProducaoEvents As clsButtonEvents
+Private m_btnDashboardProducaoEvents As clsButtonEvents
 Private m_btnEventosEvents As clsButtonEvents
 Private m_btnCadastrosEvents As clsButtonEvents
 Private m_btnConfigEvents As clsButtonEvents
@@ -288,7 +290,7 @@ Private Sub UserForm_Initialize()
     End With
     
     '--- Cria Botões de Navegação ----------------------------------------------
-    botoes = Array("btnDashboard", "btnTimeline", "btnCards", "btnPlanejamento", "btnSimulacao", "btnComparar", "btnCapacidade", "btnRelatorios", "btnProducao", "btnEventos", "btnCadastros", "btnConfig")
+    botoes = Array("btnDashboard", "btnTimeline", "btnCards", "btnPlanejamento", "btnSimulacao", "btnComparar", "btnCapacidade", "btnRelatorios", "btnProducao", "btnDashboardProducao", "btnEventos", "btnCadastros", "btnConfig")
     posY = 12
     
     For i = LBound(botoes) To UBound(botoes)
@@ -305,9 +307,10 @@ Private Sub UserForm_Initialize()
             IIf(i = 6, "Capacidade", _
             IIf(i = 7, "Relatórios", _
             IIf(i = 8, "Produção", _
-            IIf(i = 9, "Eventos", _
-            IIf(i = 10, "Cadastros", _
-            IIf(i = 11, "Configurações", "")))))))))))
+            IIf(i = 9, "Dash. Prod.", _
+            IIf(i = 10, "Eventos", _
+            IIf(i = 11, "Cadastros", _
+            IIf(i = 12, "Configurações", ""))))))))))))
         btn.Left = ESPACAMENTO
         btn.Top = posY
         btn.Width = LARGURA_BOTAO - (2 * ESPACAMENTO)
@@ -329,6 +332,7 @@ Private Sub UserForm_Initialize()
             Case "btnCapacidade": Set btnCapacidade = btn
             Case "btnRelatorios": Set btnRelatorios = btn
             Case "btnProducao": Set btnProducao = btn
+            Case "btnDashboardProducao": Set btnDashboardProducao = btn
             Case "btnEventos": Set btnEventos = btn
             Case "btnCadastros": Set btnCadastros = btn
             Case "btnConfig": Set btnConfig = btn
@@ -349,6 +353,9 @@ Private Sub UserForm_Initialize()
     
     Set m_btnProducaoEvents = New clsButtonEvents
     Set m_btnProducaoEvents.Button = btnProducao
+    
+    Set m_btnDashboardProducaoEvents = New clsButtonEvents
+    Set m_btnDashboardProducaoEvents.Button = btnDashboardProducao
     
     Set m_btnEventosEvents = New clsButtonEvents
     Set m_btnEventosEvents.Button = btnEventos
@@ -1109,6 +1116,10 @@ Private Sub btnProducao_Click()
     frmProducao.Show vbModeless
 End Sub
 
+Private Sub btnDashboardProducao_Click()
+    frmDashboardProducao.Show vbModeless
+End Sub
+
 Private Sub btnEventos_Click()
     ExibirPainel "Eventos"
 End Sub
@@ -1171,6 +1182,10 @@ End Sub
 
 Private Sub m_btnProducaoEvents_Clicked()
     btnProducao_Click
+End Sub
+
+Private Sub m_btnDashboardProducaoEvents_Clicked()
+    btnDashboardProducao_Click
 End Sub
 
 Private Sub m_btnEventosEvents_Clicked()
