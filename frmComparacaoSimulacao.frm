@@ -54,8 +54,6 @@ Private lblResumo As MSForms.Label
 Private m_ID_SimulacaoA As String
 Private m_ID_SimulacaoB As String
 Private m_Zoom As Double
-Private m_DataInicioPeriodo As Date
-Private m_DataFimPeriodo As Date
 Private m_CarregadoA As Boolean
 Private m_CarregadoB As Boolean
 
