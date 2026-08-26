@@ -53,11 +53,8 @@ Private lblResumo As MSForms.Label
 '=== ESTADO =====================================================================
 Private m_ID_SimulacaoA As String
 Private m_ID_SimulacaoB As String
-Private m_Zoom As Double
-Private m_CarregadoA As Boolean
-Private m_CarregadoB As Boolean
-Private m_SincronizandoScroll As Boolean
 Private m_ScrollPos As Single
+Private m_SincronizandoScroll As Boolean
 Private m_PosicoesSalvas As Boolean
 
 '=== PROPRIEDADES VISUAIS ======================================================
@@ -80,9 +77,6 @@ Private Sub UserForm_Initialize()
     
     m_ID_SimulacaoA = ""
     m_ID_SimulacaoB = ""
-    m_Zoom = 1.0
-    m_CarregadoA = False
-    m_CarregadoB = False
     
     Call CriarControles
     Call CarregarListaSimulacoes
