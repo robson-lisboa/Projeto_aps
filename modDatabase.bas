@@ -114,6 +114,25 @@ Public Sub CriarEstruturasDeDados()
         ws.Visible = xlSheetVeryHidden
     End If
     
+    '--- BD_Producoes ------------------------------------------------------------
+    If Not PlanilhaExiste("BD_Producoes") Then
+        Set ws = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
+        ws.Name = "BD_Producoes"
+        CriarTabela ws, "TabelaProducoes", Array("ID_Producao", "ID_OP", "ID_Operador", _
+            "Equipamento", "Data_Inicio", "Data_Fim", "Quantidade_Planejada", _
+            "Quantidade_Produzida", "Quantidade_Rejeitada", "Status")
+        ws.Visible = xlSheetVeryHidden
+    End If
+    
+    '--- BD_Paradas --------------------------------------------------------------
+    If Not PlanilhaExiste("BD_Paradas") Then
+        Set ws = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
+        ws.Name = "BD_Paradas"
+        CriarTabela ws, "TabelaParadas", Array("ID_Parada", "ID_OP", "Equipamento", _
+            "ID_Operador", "Data_Inicio", "Data_Fim", "ID_Motivo", "Observacao", "Duracao_Minutos")
+        ws.Visible = xlSheetVeryHidden
+    End If
+    
 Sair:
     Application.ScreenUpdating = True
     Exit Sub

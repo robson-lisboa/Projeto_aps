@@ -944,3 +944,531 @@ ErroIndicadores:
     ObterIndicadoresSimulacao = Array(0, 0, 0, 0, 0, 0, 0)
     Resume Sair
 End Sub
+
+'================================================================================
+' MÓDULO DE PRODUÇÃO REAL
+'================================================================================
+
+'--------------------------------------------------------------------------------
+' FUNÇÃO: ObterProducoesEmArray
+' PROPÓSITO: Ler todas as produções para memória
+' RETORNO: Variant Array (1-based)
+'--------------------------------------------------------------------------------
+Public Function ObterProducoesEmArray() As Variant
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim dados As Variant
+    
+    On Error GoTo ErroObterProducoes
+    
+    Set ws = ThisWorkbook.Worksheets("BD_Producoes")
+    Set tbl = ws.ListObjects("TabelaProducoes")
+    
+    dados = tbl.Range.Value
+    ObterProducoesEmArray = dados
+    
+Sair:
+    Exit Function
+    
+ErroObterProducoes:
+    ObterProducoesEmArray = CVErr(xlErrRef)
+    Resume Sair
+End Function
+
+'--------------------------------------------------------------------------------
+' FUNÇÃO: ObterParadasEmArray
+' PROPÓSITO: Ler todas as paradas para memória
+' RETORNO: Variant Array (1-based)
+'--------------------------------------------------------------------------------
+Public Function ObterParadasEmArray() As Variant
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim dados As Variant
+    
+    On Error GoTo ErroObterParadas
+    
+    Set ws = ThisWorkbook.Worksheets("BD_Paradas")
+    Set tbl = ws.ListObjects("TabelaParadas")
+    
+    dados = tbl.Range.Value
+    ObterParadasEmArray = dados
+    
+Sair:
+    Exit Function
+    
+ErroObterParadas:
+    ObterParadasEmArray = CVErr(xlErrRef)
+    Resume Sair
+End Function
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: IniciarProducao
+' PROPÓSITO: Iniciar uma nova produção
+'--------------------------------------------------------------------------------
+Public Sub IniciarProducao(pID_Producao As String, pID_OP As String, pID_Operador As String, _
+                           pEquipamento As String, pQtdPlanejada As Long)
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim novaLinha As ListRow
+    
+    On Error GoTo ErroIniciar
+    
+    If Trim(pID_Producao) = "" Then
+        Err.Raise vbObjectError + 400, "IniciarProducao", "ID da produção não informado."
+    End If
+    
+    If Trim(pID_OP) = "" Then
+        Err.Raise vbObjectError + 401, "IniciarProducao", "ID da OP não informado."
+    End If
+    
+    Set ws = ThisWorkbook.Worksheets("BD_Producoes")
+    Set tbl = ws.ListObjects("TabelaProducoes")
+    
+    Application.ScreenUpdating = False
+    
+    Set novaLinha = tbl.ListRows.Add
+    
+    With novaLinha.Range
+        .Cells(1, tbl.ListColumns("ID_Producao").Index).Value = pID_Producao
+        .Cells(1, tbl.ListColumns("ID_OP").Index).Value = pID_OP
+        .Cells(1, tbl.ListColumns("ID_Operador").Index).Value = pID_Operador
+        .Cells(1, tbl.ListColumns("Equipamento").Index).Value = pEquipamento
+        .Cells(1, tbl.ListColumns("Data_Inicio").Index).Value = Now
+        .Cells(1, tbl.ListColumns("Data_Fim").Index).Value = Empty
+        .Cells(1, tbl.ListColumns("Quantidade_Planejada").Index).Value = pQtdPlanejada
+        .Cells(1, tbl.ListColumns("Quantidade_Produzida").Index).Value = 0
+        .Cells(1, tbl.ListColumns("Quantidade_Rejeitada").Index).Value = 0
+        .Cells(1, tbl.ListColumns("Status").Index).Value = "EM PRODUÇÃO"
+    End With
+    
+Sair:
+    Application.ScreenUpdating = True
+    Exit Sub
+    
+ErroIniciar:
+    MsgBox "Erro ao iniciar produção: " & Err.Description, vbCritical, "APS PURAN - Engine"
+    Resume Sair
+End Sub
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: PausarProducao
+' PROPÓSITO: Pausar uma produção em andamento
+'--------------------------------------------------------------------------------
+Public Sub PausarProducao(pID_Producao As String)
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim dados As Variant
+    Dim i As Long, totalLinhas As Long
+    Dim linhaEncontrada As Long
+    
+    On Error GoTo ErroPausar
+    
+    If Trim(pID_Producao) = "" Then
+        Err.Raise vbObjectError + 402, "PausarProducao", "ID da produção não informado."
+    End If
+    
+    Set ws = ThisWorkbook.Worksheets("BD_Producoes")
+    Set tbl = ws.ListObjects("TabelaProducoes")
+    
+    Application.ScreenUpdating = False
+    
+    dados = tbl.Range.Value
+    totalLinhas = UBound(dados, 1)
+    linhaEncontrada = 0
+    
+    For i = 2 To totalLinhas
+        If Trim(CStr(dados(i, 1))) = Trim(pID_Producao) Then
+            linhaEncontrada = i
+            Exit For
+        End If
+    Next i
+    
+    If linhaEncontrada = 0 Then
+        Err.Raise vbObjectError + 403, "PausarProducao", "Produção não encontrada."
+    End If
+    
+    If Trim(CStr(dados(linhaEncontrada, 10))) <> "EM PRODUÇÃO" Then
+        Err.Raise vbObjectError + 404, "PausarProducao", "Produção não está em andamento."
+    End If
+    
+    tbl.ListRows(linhaEncontrada - 1).Range.Cells(1, tbl.ListColumns("Status").Index).Value = "PAUSADA"
+    
+Sair:
+    Application.ScreenUpdating = True
+    Exit Sub
+    
+ErroPausar:
+    MsgBox "Erro ao pausar produção: " & Err.Description, vbCritical, "APS PURAN - Engine"
+    Resume Sair
+End Sub
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: RetomarProducao
+' PROPÓSITO: Retomar uma produção pausada
+'--------------------------------------------------------------------------------
+Public Sub RetomarProducao(pID_Producao As String)
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim dados As Variant
+    Dim i As Long, totalLinhas As Long
+    Dim linhaEncontrada As Long
+    
+    On Error GoTo ErroRetomar
+    
+    If Trim(pID_Producao) = "" Then
+        Err.Raise vbObjectError + 405, "RetomarProducao", "ID da produção não informado."
+    End If
+    
+    Set ws = ThisWorkbook.Worksheets("BD_Producoes")
+    Set tbl = ws.ListObjects("TabelaProducoes")
+    
+    Application.ScreenUpdating = False
+    
+    dados = tbl.Range.Value
+    totalLinhas = UBound(dados, 1)
+    linhaEncontrada = 0
+    
+    For i = 2 To totalLinhas
+        If Trim(CStr(dados(i, 1))) = Trim(pID_Producao) Then
+            linhaEncontrada = i
+            Exit For
+        End If
+    Next i
+    
+    If linhaEncontrada = 0 Then
+        Err.Raise vbObjectError + 406, "RetomarProducao", "Produção não encontrada."
+    End If
+    
+    If Trim(CStr(dados(linhaEncontrada, 10))) <> "PAUSADA" Then
+        Err.Raise vbObjectError + 407, "RetomarProducao", "Produção não está pausada."
+    End If
+    
+    tbl.ListRows(linhaEncontrada - 1).Range.Cells(1, tbl.ListColumns("Status").Index).Value = "EM PRODUÇÃO"
+    
+Sair:
+    Application.ScreenUpdating = True
+    Exit Sub
+    
+ErroRetomar:
+    MsgBox "Erro ao retomar produção: " & Err.Description, vbCritical, "APS PURAN - Engine"
+    Resume Sair
+End Sub
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: FinalizarProducao
+' PROPÓSITO: Finalizar uma produção em andamento
+'--------------------------------------------------------------------------------
+Public Sub FinalizarProducao(pID_Producao As String, pQtdProduzida As Long, pQtdRejeitada As Long)
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim dados As Variant
+    Dim i As Long, totalLinhas As Long
+    Dim linhaEncontrada As Long
+    
+    On Error GoTo ErroFinalizar
+    
+    If Trim(pID_Producao) = "" Then
+        Err.Raise vbObjectError + 408, "FinalizarProducao", "ID da produção não informado."
+    End If
+    
+    If pQtdProduzida < 0 Or pQtdRejeitada < 0 Then
+        Err.Raise vbObjectError + 409, "FinalizarProducao", "Quantidades não podem ser negativas."
+    End If
+    
+    Set ws = ThisWorkbook.Worksheets("BD_Producoes")
+    Set tbl = ws.ListObjects("TabelaProducoes")
+    
+    Application.ScreenUpdating = False
+    
+    dados = tbl.Range.Value
+    totalLinhas = UBound(dados, 1)
+    linhaEncontrada = 0
+    
+    For i = 2 To totalLinhas
+        If Trim(CStr(dados(i, 1))) = Trim(pID_Producao) Then
+            linhaEncontrada = i
+            Exit For
+        End If
+    Next i
+    
+    If linhaEncontrada = 0 Then
+        Err.Raise vbObjectError + 410, "FinalizarProducao", "Produção não encontrada."
+    End If
+    
+    With tbl.ListRows(linhaEncontrada - 1).Range
+        .Cells(1, tbl.ListColumns("Data_Fim").Index).Value = Now
+        .Cells(1, tbl.ListColumns("Quantidade_Produzida").Index).Value = pQtdProduzida
+        .Cells(1, tbl.ListColumns("Quantidade_Rejeitada").Index).Value = pQtdRejeitada
+        .Cells(1, tbl.ListColumns("Status").Index).Value = "FINALIZADA"
+    End With
+    
+Sair:
+    Application.ScreenUpdating = True
+    Exit Sub
+    
+ErroFinalizar:
+    MsgBox "Erro ao finalizar produção: " & Err.Description, vbCritical, "APS PURAN - Engine"
+    Resume Sair
+End Sub
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: RegistrarParada
+' PROPÓSITO: Registrar início de parada
+'--------------------------------------------------------------------------------
+Public Sub RegistrarParada(pID_Parada As String, pID_OP As String, pEquipamento As String, _
+                           pID_Operador As String, pID_Motivo As String, pObservacao As String)
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim novaLinha As ListRow
+    
+    On Error GoTo ErroRegistrarParada
+    
+    If Trim(pID_Parada) = "" Then
+        Err.Raise vbObjectError + 411, "RegistrarParada", "ID da parada não informado."
+    End If
+    
+    Set ws = ThisWorkbook.Worksheets("BD_Paradas")
+    Set tbl = ws.ListObjects("TabelaParadas")
+    
+    Application.ScreenUpdating = False
+    
+    Set novaLinha = tbl.ListRows.Add
+    
+    With novaLinha.Range
+        .Cells(1, tbl.ListColumns("ID_Parada").Index).Value = pID_Parada
+        .Cells(1, tbl.ListColumns("ID_OP").Index).Value = pID_OP
+        .Cells(1, tbl.ListColumns("Equipamento").Index).Value = pEquipamento
+        .Cells(1, tbl.ListColumns("ID_Operador").Index).Value = pID_Operador
+        .Cells(1, tbl.ListColumns("Data_Inicio").Index).Value = Now
+        .Cells(1, tbl.ListColumns("Data_Fim").Index).Value = Empty
+        .Cells(1, tbl.ListColumns("ID_Motivo").Index).Value = pID_Motivo
+        .Cells(1, tbl.ListColumns("Observacao").Index).Value = pObservacao
+        .Cells(1, tbl.ListColumns("Duracao_Minutos").Index).Value = 0
+    End With
+    
+Sair:
+    Application.ScreenUpdating = True
+    Exit Sub
+    
+ErroRegistrarParada:
+    MsgBox "Erro ao registrar parada: " & Err.Description, vbCritical, "APS PURAN - Engine"
+    Resume Sair
+End Sub
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: FinalizarParada
+' PROPÓSITO: Finalizar uma parada em andamento
+'--------------------------------------------------------------------------------
+Public Sub FinalizarParada(pID_Parada As String)
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim dados As Variant
+    Dim i As Long, totalLinhas As Long
+    Dim linhaEncontrada As Long
+    Dim inicioParada As Date
+    Dim fimParada As Date
+    Dim duracaoMinutos As Long
+    
+    On Error GoTo ErroFinalizarParada
+    
+    If Trim(pID_Parada) = "" Then
+        Err.Raise vbObjectError + 412, "FinalizarParada", "ID da parada não informado."
+    End If
+    
+    Set ws = ThisWorkbook.Worksheets("BD_Paradas")
+    Set tbl = ws.ListObjects("TabelaParadas")
+    
+    Application.ScreenUpdating = False
+    
+    dados = tbl.Range.Value
+    totalLinhas = UBound(dados, 1)
+    linhaEncontrada = 0
+    
+    For i = 2 To totalLinhas
+        If Trim(CStr(dados(i, 1))) = Trim(pID_Parada) Then
+            linhaEncontrada = i
+            Exit For
+        End If
+    Next i
+    
+    If linhaEncontrada = 0 Then
+        Err.Raise vbObjectError + 413, "FinalizarParada", "Parada não encontrada."
+    End If
+    
+    If IsDate(dados(linhaEncontrada, 6)) And Not IsEmpty(dados(linhaEncontrada, 6)) Then
+        Err.Raise vbObjectError + 414, "FinalizarParada", "Parada já foi finalizada."
+    End If
+    
+    fimParada = Now
+    inicioParada = CDate(dados(linhaEncontrada, 5))
+    duracaoMinutos = (fimParada - inicioParada) * 24 * 60
+    
+    With tbl.ListRows(linhaEncontrada - 1).Range
+        .Cells(1, tbl.ListColumns("Data_Fim").Index).Value = fimParada
+        .Cells(1, tbl.ListColumns("Duracao_Minutos").Index).Value = duracaoMinutos
+    End With
+    
+Sair:
+    Application.ScreenUpdating = True
+    Exit Sub
+    
+ErroFinalizarParada:
+    MsgBox "Erro ao finalizar parada: " & Err.Description, vbCritical, "APS PURAN - Engine"
+    Resume Sair
+End Sub
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: AtualizarProducao
+' PROPÓSITO: Atualizar uma produção existente
+'--------------------------------------------------------------------------------
+Public Sub AtualizarProducao(pID_Producao As String, pID_OP As String, pID_Operador As String, _
+                             pEquipamento As String, pDataInicio As Date, pDataFim As Date, _
+                             pQtdPlanejada As Long, pQtdProduzida As Long, pQtdRejeitada As Long, pStatus As String)
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim dados As Variant
+    Dim i As Long, totalLinhas As Long
+    Dim linhaEncontrada As Long
+    
+    On Error GoTo ErroAtualizarProducao
+    
+    If Trim(pID_Producao) = "" Then
+        Err.Raise vbObjectError + 415, "AtualizarProducao", "ID da produção não informado."
+    End If
+    
+    Set ws = ThisWorkbook.Worksheets("BD_Producoes")
+    Set tbl = ws.ListObjects("TabelaProducoes")
+    
+    Application.ScreenUpdating = False
+    
+    dados = tbl.Range.Value
+    totalLinhas = UBound(dados, 1)
+    linhaEncontrada = 0
+    
+    For i = 2 To totalLinhas
+        If Trim(CStr(dados(i, 1))) = Trim(pID_Producao) Then
+            linhaEncontrada = i
+            Exit For
+        End If
+    Next i
+    
+    If linhaEncontrada = 0 Then
+        Err.Raise vbObjectError + 416, "AtualizarProducao", "Produção não encontrada."
+    End If
+    
+    With tbl.ListRows(linhaEncontrada - 1).Range
+        .Cells(1, tbl.ListColumns("ID_OP").Index).Value = pID_OP
+        .Cells(1, tbl.ListColumns("ID_Operador").Index).Value = pID_Operador
+        .Cells(1, tbl.ListColumns("Equipamento").Index).Value = pEquipamento
+        .Cells(1, tbl.ListColumns("Data_Inicio").Index).Value = pDataInicio
+        .Cells(1, tbl.ListColumns("Data_Fim").Index).Value = pDataFim
+        .Cells(1, tbl.ListColumns("Quantidade_Planejada").Index).Value = pQtdPlanejada
+        .Cells(1, tbl.ListColumns("Quantidade_Produzida").Index).Value = pQtdProduzida
+        .Cells(1, tbl.ListColumns("Quantidade_Rejeitada").Index).Value = pQtdRejeitada
+        .Cells(1, tbl.ListColumns("Status").Index).Value = pStatus
+    End With
+    
+Sair:
+    Application.ScreenUpdating = True
+    Exit Sub
+    
+ErroAtualizarProducao:
+    MsgBox "Erro ao atualizar produção: " & Err.Description, vbCritical, "APS PURAN - Engine"
+    Resume Sair
+End Sub
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: ExcluirProducao
+' PROPÓSITO: Excluir uma produção
+'--------------------------------------------------------------------------------
+Public Sub ExcluirProducao(pID_Producao As String)
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim dados As Variant
+    Dim i As Long, totalLinhas As Long
+    Dim linhaEncontrada As Long
+    
+    On Error GoTo ErroExcluirProducao
+    
+    If Trim(pID_Producao) = "" Then
+        Err.Raise vbObjectError + 417, "ExcluirProducao", "ID da produção não informado."
+    End If
+    
+    Set ws = ThisWorkbook.Worksheets("BD_Producoes")
+    Set tbl = ws.ListObjects("TabelaProducoes")
+    
+    Application.ScreenUpdating = False
+    
+    dados = tbl.Range.Value
+    totalLinhas = UBound(dados, 1)
+    linhaEncontrada = 0
+    
+    For i = 2 To totalLinhas
+        If Trim(CStr(dados(i, 1))) = Trim(pID_Producao) Then
+            linhaEncontrada = i
+            Exit For
+        End If
+    Next i
+    
+    If linhaEncontrada = 0 Then
+        Err.Raise vbObjectError + 418, "ExcluirProducao", "Produção não encontrada."
+    End If
+    
+    tbl.ListRows(linhaEncontrada - 1).Delete
+    
+Sair:
+    Application.ScreenUpdating = True
+    Exit Sub
+    
+ErroExcluirProducao:
+    MsgBox "Erro ao excluir produção: " & Err.Description, vbCritical, "APS PURAN - Engine"
+    Resume Sair
+End Sub
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: ExcluirParada
+' PROPÓSITO: Excluir uma parada
+'--------------------------------------------------------------------------------
+Public Sub ExcluirParada(pID_Parada As String)
+    Dim ws As Worksheet
+    Dim tbl As ListObject
+    Dim dados As Variant
+    Dim i As Long, totalLinhas As Long
+    Dim linhaEncontrada As Long
+    
+    On Error GoTo ErroExcluirParada
+    
+    If Trim(pID_Parada) = "" Then
+        Err.Raise vbObjectError + 419, "ExcluirParada", "ID da parada não informado."
+    End If
+    
+    Set ws = ThisWorkbook.Worksheets("BD_Paradas")
+    Set tbl = ws.ListObjects("TabelaParadas")
+    
+    Application.ScreenUpdating = False
+    
+    dados = tbl.Range.Value
+    totalLinhas = UBound(dados, 1)
+    linhaEncontrada = 0
+    
+    For i = 2 To totalLinhas
+        If Trim(CStr(dados(i, 1))) = Trim(pID_Parada) Then
+            linhaEncontrada = i
+            Exit For
+        End If
+    Next i
+    
+    If linhaEncontrada = 0 Then
+        Err.Raise vbObjectError + 420, "ExcluirParada", "Parada não encontrada."
+    End If
+    
+    tbl.ListRows(linhaEncontrada - 1).Delete
+    
+Sair:
+    Application.ScreenUpdating = True
+    Exit Sub
+    
+ErroExcluirParada:
+    MsgBox "Erro ao excluir parada: " & Err.Description, vbCritical, "APS PURAN - Engine"
+    Resume Sair
+End Sub

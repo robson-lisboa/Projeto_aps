@@ -751,8 +751,7 @@ Public Sub ExibirPainel(NomePainel As String)
         Case "Simulação"
             frmSimulacao.Show vbModeless
         Case "Produção"
-            frmCadastroOP.Show vbModal
-            ExibirPainel m_UltimoPainelNaoModal
+            frmProducao.Show vbModeless
         Case "Eventos"
             frmEventos.Show vbModal
             ExibirPainel m_UltimoPainelNaoModal
@@ -1107,7 +1106,7 @@ Private Sub btnCards_Click()
 End Sub
 
 Private Sub btnProducao_Click()
-    ExibirPainel "Produção"
+    frmProducao.Show vbModeless
 End Sub
 
 Private Sub btnEventos_Click()
