@@ -44,6 +44,9 @@ Private cboProduto As MSForms.ComboBox
 Private cboStatus As MSForms.ComboBox
 Private btnGerar As MSForms.CommandButton
 Private btnAtualizar As MSForms.CommandButton
+Private btnExportarExcel As MSForms.CommandButton
+Private btnExportarPDF As MSForms.CommandButton
+Private btnImprimir As MSForms.CommandButton
 Private btnFechar As MSForms.CommandButton
 Private fraResultado As MSForms.Frame
 Private lblResumo As MSForms.Label
@@ -271,10 +274,49 @@ Private Sub CriarControles()
         .ForeColor = COR_TEXTO_CLARO
     End With
     
+    Set btnExportarExcel = Me.Controls.Add("Forms.CommandButton.1", "btnExportarExcel", True)
+    With btnExportarExcel
+        .Caption = "Exportar Excel"
+        .Left = 232
+        .Top = 152
+        .Width = 100
+        .Height = 30
+        .Font.Size = 10
+        .Font.Bold = True
+        .BackColor = COR_VERDE
+        .ForeColor = COR_TEXTO_CLARO
+    End With
+    
+    Set btnExportarPDF = Me.Controls.Add("Forms.CommandButton.1", "btnExportarPDF", True)
+    With btnExportarPDF
+        .Caption = "Exportar PDF"
+        .Left = 342
+        .Top = 152
+        .Width = 100
+        .Height = 30
+        .Font.Size = 10
+        .Font.Bold = True
+        .BackColor = COR_AMARELO
+        .ForeColor = COR_TEXTO_ESCURO
+    End With
+    
+    Set btnImprimir = Me.Controls.Add("Forms.CommandButton.1", "btnImprimir", True)
+    With btnImprimir
+        .Caption = "Imprimir"
+        .Left = 452
+        .Top = 152
+        .Width = 100
+        .Height = 30
+        .Font.Size = 10
+        .Font.Bold = True
+        .BackColor = COR_AZUL
+        .ForeColor = COR_TEXTO_CLARO
+    End With
+    
     Set btnFechar = Me.Controls.Add("Forms.CommandButton.1", "btnFechar", True)
     With btnFechar
         .Caption = "Fechar"
-        .Left = 232
+        .Left = 562
         .Top = 152
         .Width = 100
         .Height = 30
@@ -329,6 +371,21 @@ End Sub
 Private Sub btnFechar_Click()
     On Error Resume Next
     Unload Me
+End Sub
+
+Private Sub btnExportarExcel_Click()
+    On Error Resume Next
+    Call ExportarExcel
+End Sub
+
+Private Sub btnExportarPDF_Click()
+    On Error Resume Next
+    Call ExportarPDF
+End Sub
+
+Private Sub btnImprimir_Click()
+    On Error Resume Next
+    Call ImprimirRelatorio_Executar
 End Sub
 
 '================================================================================
@@ -554,6 +611,97 @@ Private Sub CriarCardIndicador(pContainer As MSForms.Frame, pTitulo As String, p
         .ForeColor = pCorValor
         .BackColor = vbWhite
     End With
+End Sub
+
+'================================================================================
+' SUBROTINAS DE EXPORTAÇÃO E IMPRESSÃO
+'================================================================================
+
+Private Sub ExportarExcel()
+    On Error GoTo ErroExportar
+    
+    If m_PeriodoInicio = 0 Or m_PeriodoFim = 0 Then
+        MsgBox "Gere um relatório antes de exportar.", vbExclamation, "Validação"
+        Exit Sub
+    End If
+    
+    Dim postoFiltro As String
+    Dim produtoFiltro As String
+    Dim statusFiltro As String
+    
+    postoFiltro = IIf(cboPosto.ListIndex = -1, "", cboPosto.Text)
+    produtoFiltro = IIf(cboProduto.ListIndex = -1, "", cboProduto.Text)
+    statusFiltro = IIf(cboStatus.ListIndex = -1, "", cboStatus.Text)
+    
+    Dim relatorio As clsRelatorioProducao
+    Set relatorio = GerarRelatorioProducao(m_PeriodoInicio, m_PeriodoFim, postoFiltro, produtoFiltro, statusFiltro)
+    
+    Call ExportarRelatorioExcel(relatorio, m_PeriodoInicio, m_PeriodoFim, postoFiltro, produtoFiltro, statusFiltro)
+    
+Sair:
+    Exit Sub
+    
+ErroExportar:
+    MsgBox "Erro ao exportar Excel: " & Err.Description, vbCritical, "APS PURAN"
+    Resume Sair
+End Sub
+
+Private Sub ExportarPDF()
+    On Error GoTo ErroExportar
+    
+    If m_PeriodoInicio = 0 Or m_PeriodoFim = 0 Then
+        MsgBox "Gere um relatório antes de exportar.", vbExclamation, "Validação"
+        Exit Sub
+    End If
+    
+    Dim postoFiltro As String
+    Dim produtoFiltro As String
+    Dim statusFiltro As String
+    
+    postoFiltro = IIf(cboPosto.ListIndex = -1, "", cboPosto.Text)
+    produtoFiltro = IIf(cboProduto.ListIndex = -1, "", cboProduto.Text)
+    statusFiltro = IIf(cboStatus.ListIndex = -1, "", cboStatus.Text)
+    
+    Dim relatorio As clsRelatorioProducao
+    Set relatorio = GerarRelatorioProducao(m_PeriodoInicio, m_PeriodoFim, postoFiltro, produtoFiltro, statusFiltro)
+    
+    Call ExportarRelatorioPDF(relatorio, m_PeriodoInicio, m_PeriodoFim, postoFiltro, produtoFiltro, statusFiltro)
+    
+Sair:
+    Exit Sub
+    
+ErroExportar:
+    MsgBox "Erro ao gerar PDF: " & Err.Description, vbCritical, "APS PURAN"
+    Resume Sair
+End Sub
+
+Private Sub ImprimirRelatorio_Executar()
+    On Error GoTo ErroImprimir
+    
+    If m_PeriodoInicio = 0 Or m_PeriodoFim = 0 Then
+        MsgBox "Gere um relatório antes de imprimir.", vbExclamation, "Validação"
+        Exit Sub
+    End If
+    
+    Dim postoFiltro As String
+    Dim produtoFiltro As String
+    Dim statusFiltro As String
+    
+    postoFiltro = IIf(cboPosto.ListIndex = -1, "", cboPosto.Text)
+    produtoFiltro = IIf(cboProduto.ListIndex = -1, "", cboProduto.Text)
+    statusFiltro = IIf(cboStatus.ListIndex = -1, "", cboStatus.Text)
+    
+    Dim relatorio As clsRelatorioProducao
+    Set relatorio = GerarRelatorioProducao(m_PeriodoInicio, m_PeriodoFim, postoFiltro, produtoFiltro, statusFiltro)
+    
+    Call ImprimirRelatorio(relatorio, m_PeriodoInicio, m_PeriodoFim, postoFiltro, produtoFiltro, statusFiltro)
+    
+Sair:
+    Exit Sub
+    
+ErroImprimir:
+    MsgBox "Erro ao imprimir: " & Err.Description, vbCritical, "APS PURAN"
+    Resume Sair
 End Sub
 
 '================================================================================
