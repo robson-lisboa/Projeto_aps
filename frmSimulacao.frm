@@ -45,6 +45,9 @@ Private btnNovaSimulacao As MSForms.CommandButton
 Private btnAbrirSimulacao As MSForms.CommandButton
 Private btnImportarOPs As MSForms.CommandButton
 Private btnExcluirSimulacao As MSForms.CommandButton
+Private btnExportarSimulacaoExcel As MSForms.CommandButton
+Private btnExportarSimulacaoPDF As MSForms.CommandButton
+Private btnImprimirSimulacao As MSForms.CommandButton
 Private btnFechar As MSForms.CommandButton
 
 '=== CAMPOS DE FILTRO ===========================================================
@@ -202,6 +205,48 @@ Private Sub CriarControles()
         .Font.Size = 10
         .Font.Bold = True
         .BackColor = COR_ALERTA
+        .ForeColor = COR_TEXTO_CLARO
+    End With
+    btnLeft = btnLeft + 110
+    
+    Set btnExportarSimulacaoExcel = Me.Controls.Add("Forms.CommandButton.1", "btnExportarSimulacaoExcel", True)
+    With btnExportarSimulacaoExcel
+        .Caption = "Exportar Excel"
+        .Left = btnLeft
+        .Top = 348
+        .Width = 100
+        .Height = 30
+        .Font.Size = 10
+        .Font.Bold = True
+        .BackColor = COR_VERDE
+        .ForeColor = COR_TEXTO_CLARO
+    End With
+    btnLeft = btnLeft + 110
+    
+    Set btnExportarSimulacaoPDF = Me.Controls.Add("Forms.CommandButton.1", "btnExportarSimulacaoPDF", True)
+    With btnExportarSimulacaoPDF
+        .Caption = "Exportar PDF"
+        .Left = btnLeft
+        .Top = 348
+        .Width = 100
+        .Height = 30
+        .Font.Size = 10
+        .Font.Bold = True
+        .BackColor = COR_AMARELO
+        .ForeColor = COR_TEXTO_ESCURO
+    End With
+    btnLeft = btnLeft + 110
+    
+    Set btnImprimirSimulacao = Me.Controls.Add("Forms.CommandButton.1", "btnImprimirSimulacao", True)
+    With btnImprimirSimulacao
+        .Caption = "Imprimir"
+        .Left = btnLeft
+        .Top = 348
+        .Width = 100
+        .Height = 30
+        .Font.Size = 10
+        .Font.Bold = True
+        .BackColor = COR_AZUL
         .ForeColor = COR_TEXTO_CLARO
     End With
     
@@ -948,6 +993,21 @@ End Sub
 Private Sub btnFechar_Click()
     On Error Resume Next
     Unload Me
+End Sub
+
+Private Sub btnExportarSimulacaoExcel_Click()
+    On Error Resume Next
+    Call ExportarSimulacaoExcel(m_ID_SimulacaoAtiva, m_DataInicioPeriodo, m_DataFimPeriodo)
+End Sub
+
+Private Sub btnExportarSimulacaoPDF_Click()
+    On Error Resume Next
+    Call ExportarSimulacaoPDF(m_ID_SimulacaoAtiva, m_DataInicioPeriodo, m_DataFimPeriodo)
+End Sub
+
+Private Sub btnImprimirSimulacao_Click()
+    On Error Resume Next
+    Call ImprimirSimulacao(m_ID_SimulacaoAtiva, m_DataInicioPeriodo, m_DataFimPeriodo)
 End Sub
 
 Private Sub cmdAplicarPeriodo_Click()

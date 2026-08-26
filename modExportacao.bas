@@ -945,3 +945,330 @@ ErroImprimir:
     End If
     Resume Sair
 End Sub
+
+'--------------------------------------------------------------------------------
+' FUNÇÃO: EscreverDadosSimulacao
+' PROPÓSITO: Escrever dados da simulação em uma planilha
+' PARÂMETROS: ws, pID_Simulacao, pPeriodoInicio, pPeriodoFim, pFiltroStatus, pTextoBusca
+' RETORNO: Próxima linha disponível
+'--------------------------------------------------------------------------------
+Private Function EscreverDadosSimulacao(ws As Worksheet, _
+                                        pID_Simulacao As String, _
+                                        pPeriodoInicio As Date, _
+                                        pPeriodoFim As Date, _
+                                        pFiltroStatus As String = "Todos", _
+                                        pTextoBusca As String = "") As Long
+    Dim linha As Long
+    Dim dados As Variant
+    Dim i As Long
+    Dim totalLinhas As Long
+    Dim nomeSimulacao As String
+    
+    On Error GoTo ErroEscrever
+    
+    ' Título
+    ws.Range("A1").Value = "APS PURAN — SIMULAÇÃO DE PRODUÇÃO"
+    ws.Range("A1").Font.Size = 16
+    ws.Range("A1").Font.Bold = True
+    ws.Range("A1").HorizontalAlignment = xlCenter
+    ws.Range("A1").VerticalAlignment = xlCenter
+    ws.Range("A1").Resize(1, 9).Merge
+    ws.Range("A1").RowHeight = 30
+    
+    ' Informações
+    linha = 3
+    ws.Cells(linha, 1).Value = "Data de geração:"
+    ws.Cells(linha, 2).Value = Format(Now, "dd/mm/yyyy HH:MM")
+    ws.Cells(linha, 1).Font.Bold = True
+    
+    linha = 4
+    ws.Cells(linha, 1).Value = "Simulação:"
+    ws.Cells(linha, 2).Value = pID_Simulacao
+    ws.Cells(linha, 1).Font.Bold = True
+    
+    linha = 5
+    ws.Cells(linha, 1).Value = "Período:"
+    ws.Cells(linha, 2).Value = Format(pPeriodoInicio, "dd/mm/yyyy") & " a " & Format(pPeriodoFim, "dd/mm/yyyy")
+    ws.Cells(linha, 1).Font.Bold = True
+    
+    linha = 6
+    ws.Cells(linha, 1).Value = "Filtro de Status:"
+    ws.Cells(linha, 2).Value = IIf(pFiltroStatus = "", "Todos", pFiltroStatus)
+    ws.Cells(linha, 1).Font.Bold = True
+    
+    linha = 7
+    ws.Cells(linha, 1).Value = "Busca:"
+    ws.Cells(linha, 2).Value = IIf(pTextoBusca = "", "(nenhuma)", pTextoBusca)
+    ws.Cells(linha, 1).Font.Bold = True
+    
+    ' Cabeçalho da tabela
+    linha = 9
+    ws.Cells(linha, 1).Value = "DETALHAMENTO DAS OPs DA SIMULAÇÃO"
+    ws.Cells(linha, 1).Font.Size = 12
+    ws.Cells(linha, 1).Font.Bold = True
+    ws.Cells(linha, 1).Resize(1, 9).Merge
+    
+    linha = 11
+    ws.Cells(linha, 1).Value = "ID_OP"
+    ws.Cells(linha, 2).Value = "Produto"
+    ws.Cells(linha, 3).Value = "Equipamento"
+    ws.Cells(linha, 4).Value = "Quantidade"
+    ws.Cells(linha, 5).Value = "Data Início"
+    ws.Cells(linha, 6).Value = "Data Fim"
+    ws.Cells(linha, 7).Value = "Duração (h)"
+    ws.Cells(linha, 8).Value = "Status"
+    ws.Cells(linha, 9).Value = "Sequência"
+    ws.Range(ws.Cells(linha, 1), ws.Cells(linha, 9)).Font.Bold = True
+    ws.Range(ws.Cells(linha, 1), ws.Cells(linha, 9)).Interior.Color = RGB(220, 220, 220)
+    
+    dados = ObterOPsSimulacaoEmArray(pID_Simulacao)
+    
+    If IsError(dados) Then
+        linha = linha + 1
+        ws.Cells(linha, 1).Value = "Nenhuma OP encontrada nesta simulação."
+        EscreverDadosSimulacao = linha + 1
+        Exit Function
+    End If
+    
+    totalLinhas = UBound(dados, 1)
+    Dim textoBuscaLower As String
+    
+    If pTextoBusca <> "" Then
+        textoBuscaLower = LCase(Trim(pTextoBusca))
+    End If
+    
+    linha = 12
+    Dim linhasEscritas As Long
+    linhasEscritas = 0
+    
+    For i = 1 To totalLinhas
+        Dim idOP As String
+        Dim produto As String
+        Dim equipamento As String
+        Dim quantidade As Long
+        Dim dataInicio As Date
+        Dim dataFim As Date
+        Dim duracao As Double
+        Dim status As String
+        Dim sequencia As Long
+        
+        idOP = CStr(dados(i, 2))
+        produto = CStr(dados(i, 4))
+        equipamento = CStr(dados(i, 5))
+        quantidade = CLng(dados(i, 6))
+        If IsDate(dados(i, 7)) Then dataInicio = CDate(dados(i, 7))
+        If IsDate(dados(i, 8)) Then dataFim = CDate(dados(i, 8))
+        duracao = CDbl(dados(i, 9))
+        status = CStr(dados(i, 10))
+        sequencia = CLng(dados(i, 3))
+        
+        ' Aplica filtro de status
+        If pFiltroStatus <> "Todos" Then
+            If Trim(status) <> Trim(pFiltroStatus) Then
+                GoTo ProximaLinhaSim
+            End If
+        End If
+        
+        ' Aplica filtro de busca
+        If pTextoBusca <> "" Then
+            If LCase(Trim(idOP)) <> textoBuscaLower And _
+               LCase(Trim(produto)) <> textoBuscaLower Then
+                GoTo ProximaLinhaSim
+            End If
+        End If
+        
+        ws.Cells(linha, 1).Value = idOP
+        ws.Cells(linha, 2).Value = produto
+        ws.Cells(linha, 3).Value = equipamento
+        ws.Cells(linha, 4).Value = quantidade
+        ws.Cells(linha, 5).Value = IIf(IsDate(dataInicio), dataInicio, "")
+        ws.Cells(linha, 6).Value = IIf(IsDate(dataFim), dataFim, "")
+        ws.Cells(linha, 7).Value = duracao
+        ws.Cells(linha, 8).Value = status
+        ws.Cells(linha, 9).Value = sequencia
+        
+        If IsDate(dataInicio) Then ws.Cells(linha, 5).NumberFormat = "dd/mm/yyyy HH:MM"
+        If IsDate(dataFim) Then ws.Cells(linha, 6).NumberFormat = "dd/mm/yyyy HH:MM"
+        ws.Cells(linha, 7).NumberFormat = "0.00"
+        
+        linha = linha + 1
+        linhasEscritas = linhasEscritas + 1
+        
+ProximaLinhaSim:
+    Next i
+    
+    If linhasEscritas = 0 Then
+        linha = linha + 1
+        ws.Cells(linha, 1).Value = "Nenhuma OP encontrada para os filtros selecionados."
+    End If
+    
+    ' Formatação
+    ws.Columns("A:I").AutoFit
+    ws.Range("A1").Resize(linha - 1, 9).Borders.LineStyle = xlContinuous
+    ws.Range("A1").Resize(linha - 1, 9).HorizontalAlignment = xlCenter
+    ws.Range("A1").Resize(linha - 1, 9).VerticalAlignment = xlCenter
+    
+    EscreverDadosSimulacao = linha
+    
+Sair:
+    Exit Function
+    
+ErroEscrever:
+    Err.Raise Err.Number, "EscreverDadosSimulacao", Err.Description
+    Resume Sair
+End Function
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: ExportarSimulacaoExcel
+' PROPÓSITO: Exportar simulação para Excel
+'--------------------------------------------------------------------------------
+Public Sub ExportarSimulacaoExcel(pID_Simulacao As String, _
+                                  pPeriodoInicio As Date, _
+                                  pPeriodoFim As Date, _
+                                  pFiltroStatus As String = "Todos", _
+                                  pTextoBusca As String = "")
+    Dim ws As Worksheet
+    Dim wb As Workbook
+    Dim nomeArquivo As String
+    
+    On Error GoTo ErroExportarExcel
+    
+    Set wb = Workbooks.Add
+    Set ws = wb.Worksheets(1)
+    ws.Name = "Simulação Produção"
+    
+    ws.PageSetup.Orientation = xlLandscape
+    ws.PageSetup.PaperSize = xlPaperA4
+    ws.PageSetup.Margins.Left = 0.5
+    ws.PageSetup.Margins.Right = 0.5
+    ws.PageSetup.Margins.Top = 0.75
+    ws.PageSetup.Margins.Bottom = 0.75
+    ws.PageSetup.CenterHorizontally = True
+    ws.PageSetup.CenterVertically = False
+    ws.PageSetup.PrintTitleRows = "$1:$11"
+    
+    Call EscreverDadosSimulacao(ws, pID_Simulacao, pPeriodoInicio, pPeriodoFim, pFiltroStatus, pTextoBusca)
+    
+    nomeArquivo = GerarNomeArquivo("APS_PURAN_Simulacao_" & pID_Simulacao, "xlsx")
+    
+    If nomeArquivo <> "" Then
+        wb.SaveAs Filename:=nomeArquivo, FileFormat:=xlOpenXMLWorkbook
+        wb.Close SaveChanges:=False
+        MsgBox "Simulação exportada com sucesso!" & vbCrLf & nomeArquivo, vbInformation, "APS PURAN"
+    Else
+        wb.Close SaveChanges:=False
+    End If
+    
+Sair:
+    Exit Sub
+    
+ErroExportarExcel:
+    MsgBox "Erro ao exportar simulação: " & Err.Description, vbCritical, "APS PURAN"
+    If Not wb Is Nothing Then
+        wb.Close SaveChanges:=False
+    End If
+    Resume Sair
+End Sub
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: ExportarSimulacaoPDF
+' PROPÓSITO: Exportar simulação para PDF
+'--------------------------------------------------------------------------------
+Public Sub ExportarSimulacaoPDF(pID_Simulacao As String, _
+                                pPeriodoInicio As Date, _
+                                pPeriodoFim As Date, _
+                                pFiltroStatus As String = "Todos", _
+                                pTextoBusca As String = "")
+    Dim ws As Worksheet
+    Dim wb As Workbook
+    Dim nomeArquivo As String
+    
+    On Error GoTo ErroExportarPDF
+    
+    Set wb = Workbooks.Add
+    Set ws = wb.Worksheets(1)
+    ws.Name = "Simulação Produção"
+    
+    ws.PageSetup.Orientation = xlLandscape
+    ws.PageSetup.PaperSize = xlPaperA4
+    ws.PageSetup.Margins.Left = 0.5
+    ws.PageSetup.Margins.Right = 0.5
+    ws.PageSetup.Margins.Top = 0.75
+    ws.PageSetup.Margins.Bottom = 0.75
+    ws.PageSetup.CenterHorizontally = True
+    ws.PageSetup.CenterVertically = False
+    ws.PageSetup.PrintTitleRows = "$1:$11"
+    ws.PageSetup.FitToPagesWide = 1
+    ws.PageSetup.FitToPagesTall = False
+    
+    Call EscreverDadosSimulacao(ws, pID_Simulacao, pPeriodoInicio, pPeriodoFim, pFiltroStatus, pTextoBusca)
+    
+    nomeArquivo = GerarNomeArquivo("APS_PURAN_Simulacao_" & pID_Simulacao, "pdf")
+    
+    If nomeArquivo <> "" Then
+        ws.ExportAsFixedFormat Type:=xlTypePDF, Filename:=nomeArquivo, _
+                               Quality:=xlQualityStandard, IncludeDocProperties:=True, _
+                               IgnorePrintAreas:=False, OpenAfterPublish:=True
+        wb.Close SaveChanges:=False
+        MsgBox "Simulação PDF gerada com sucesso!" & vbCrLf & nomeArquivo, vbInformation, "APS PURAN"
+    Else
+        wb.Close SaveChanges:=False
+    End If
+    
+Sair:
+    Exit Sub
+    
+ErroExportarPDF:
+    MsgBox "Erro ao gerar PDF da simulação: " & Err.Description, vbCritical, "APS PURAN"
+    If Not wb Is Nothing Then
+        wb.Close SaveChanges:=False
+    End If
+    Resume Sair
+End Sub
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: ImprimirSimulacao
+' PROPÓSITO: Imprimir simulação atual
+'--------------------------------------------------------------------------------
+Public Sub ImprimirSimulacao(pID_Simulacao As String, _
+                             pPeriodoInicio As Date, _
+                             pPeriodoFim As Date, _
+                             pFiltroStatus As String = "Todos", _
+                             pTextoBusca As String = "")
+    Dim ws As Worksheet
+    Dim wb As Workbook
+    
+    On Error GoTo ErroImprimir
+    
+    Set wb = Workbooks.Add
+    Set ws = wb.Worksheets(1)
+    ws.Name = "Simulação Produção"
+    
+    ws.PageSetup.Orientation = xlLandscape
+    ws.PageSetup.PaperSize = xlPaperA4
+    ws.PageSetup.Margins.Left = 0.5
+    ws.PageSetup.Margins.Right = 0.5
+    ws.PageSetup.Margins.Top = 0.75
+    ws.PageSetup.Margins.Bottom = 0.75
+    ws.PageSetup.CenterHorizontally = True
+    ws.PageSetup.CenterVertically = False
+    ws.PageSetup.PrintTitleRows = "$1:$11"
+    ws.PageSetup.FitToPagesWide = 1
+    ws.PageSetup.FitToPagesTall = False
+    
+    Call EscreverDadosSimulacao(ws, pID_Simulacao, pPeriodoInicio, pPeriodoFim, pFiltroStatus, pTextoBusca)
+    
+    ws.PrintOut Copies:=1, Collate:=True
+    wb.Close SaveChanges:=False
+    MsgBox "Simulação enviada para impressora.", vbInformation, "APS PURAN"
+    
+Sair:
+    Exit Sub
+    
+ErroImprimir:
+    MsgBox "Erro ao imprimir simulação: " & Err.Description, vbCritical, "APS PURAN"
+    If Not wb Is Nothing Then
+        wb.Close SaveChanges:=False
+    End If
+    Resume Sair
+End Sub
