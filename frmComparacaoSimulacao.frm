@@ -56,6 +56,9 @@ Private m_ID_SimulacaoB As String
 Private m_Zoom As Double
 Private m_CarregadoA As Boolean
 Private m_CarregadoB As Boolean
+Private m_SincronizandoScroll As Boolean
+Private m_ScrollPos As Single
+Private m_PosicoesSalvas As Boolean
 
 '=== PROPRIEDADES VISUAIS ======================================================
 Private Const COR_FUNDO As Long = 14211288
@@ -205,31 +208,31 @@ Private Sub CriarControles()
     End With
     
     '--- Labels dos títulos das áreas -------------------------------------------
-    Set lblTituloA = Me.Controls.Add("Forms.Label.1", "lblTituloA", True)
+    Set lblTituloA = Me.Controls.Add("Forms.Label.1", "lblTimelineA", True)
     With lblTituloA
-        .Caption = "Simulação A"
+        .Caption = "08:00 | 09:00 | 10:00 | 11:00 | 12:00 | 13:00 | 14:00 | 15:00 | 16:00 | 17:00"
         .Left = 12
         .Top = 128
         .Width = 470
         .Height = 24
-        .Font.Size = 10
-        .Font.Bold = True
-        .ForeColor = COR_TEXTO_CLARO
-        .BackColor = COR_HEADER
+        .Font.Size = 8
+        .Font.Bold = False
+        .ForeColor = COR_TEXTO_ESCURO
+        .BackColor = vbWhite
         .TextAlign = fmTextAlignCenter
     End With
     
-    Set lblTituloB = Me.Controls.Add("Forms.Label.1", "lblTituloB", True)
+    Set lblTituloB = Me.Controls.Add("Forms.Label.1", "lblTimelineB", True)
     With lblTituloB
-        .Caption = "Simulação B"
+        .Caption = "08:00 | 09:00 | 10:00 | 11:00 | 12:00 | 13:00 | 14:00 | 15:00 | 16:00 | 17:00"
         .Left = 500
         .Top = 128
         .Width = 470
         .Height = 24
-        .Font.Size = 10
-        .Font.Bold = True
-        .ForeColor = COR_TEXTO_CLARO
-        .BackColor = COR_HEADER
+        .Font.Size = 8
+        .Font.Bold = False
+        .ForeColor = COR_TEXTO_ESCURO
+        .BackColor = vbWhite
         .TextAlign = fmTextAlignCenter
     End With
     
@@ -240,7 +243,7 @@ Private Sub CriarControles()
         .Left = 12
         .Top = 156
         .Width = 470
-        .Height = 400
+        .Height = 380
         .BackColor = COR_FUNDO
         .BorderStyle = fmBorderStyleSingle
     End With
@@ -251,7 +254,7 @@ Private Sub CriarControles()
         .Left = 500
         .Top = 156
         .Width = 470
-        .Height = 400
+        .Height = 380
         .BackColor = COR_FUNDO
         .BorderStyle = fmBorderStyleSingle
     End With
@@ -260,7 +263,7 @@ Private Sub CriarControles()
     Set hScrollA = Me.Controls.Add("Forms.ScrollBar.1", "hScrollA", True)
     With hScrollA
         .Left = 12
-        .Top = 560
+        .Top = 540
         .Width = 470
         .Height = 16
         .Min = 0
@@ -271,7 +274,7 @@ Private Sub CriarControles()
     Set hScrollB = Me.Controls.Add("Forms.ScrollBar.1", "hScrollB", True)
     With hScrollB
         .Left = 500
-        .Top = 560
+        .Top = 540
         .Width = 470
         .Height = 16
         .Min = 0
@@ -407,6 +410,8 @@ Private Sub LimparAreas()
     
     Dim ctrl As MSForms.Control
     
+    Call ResetarPosicoesScroll
+    
     For Each ctrl In fraA.Controls
         fraA.Controls.Remove ctrl.Name
     Next ctrl
@@ -414,6 +419,11 @@ Private Sub LimparAreas()
     For Each ctrl In fraB.Controls
         fraB.Controls.Remove ctrl.Name
     Next ctrl
+    
+    If Not hScrollA Is Nothing Then hScrollA.Value = 0
+    If Not hScrollB Is Nothing Then hScrollB.Value = 0
+    m_ScrollPos = 0
+    m_PosicoesSalvas = False
 End Sub
 
 '================================================================================
@@ -497,6 +507,12 @@ Private Sub RenderizarResultado(pResultados As Collection)
     Else
         fraB.ScrollBars = fmScrollBarsNone
     End If
+    
+    Call ResetarPosicoesScroll
+    If Not hScrollA Is Nothing Then hScrollA.Value = 0
+    If Not hScrollB Is Nothing Then hScrollB.Value = 0
+    m_ScrollPos = 0
+    m_PosicoesSalvas = False
     
 Sair:
     Exit Sub
@@ -600,6 +616,143 @@ Private Sub AtualizarResumo(pResultados As Collection)
                         " | Alteradas: " & alteradas & _
                         " | Somente A: " & soA & _
                         " | Somente B: " & soB
+End Sub
+
+'================================================================================
+' EVENTOS DE SCROLL HORIZONTAL SINCRONIZADO
+'================================================================================
+Private Sub hScrollA_Change()
+    On Error GoTo ErroScrollA
+    
+    If m_SincronizandoScroll Then Exit Sub
+    If fraA Is Nothing Or fraB Is Nothing Then Exit Sub
+    If hScrollA Is Nothing Or hScrollB Is Nothing Then Exit Sub
+    
+    m_SincronizandoScroll = True
+    
+    Dim valor As Single
+    valor = hScrollA.Value
+    m_ScrollPos = valor
+    
+    Call AplicarScrollHorizontal(valor)
+    hScrollB.Value = valor
+    
+    m_SincronizandoScroll = False
+    
+Sair:
+    Exit Sub
+    
+ErroScrollA:
+    m_SincronizandoScroll = False
+    Resume Sair
+End Sub
+
+Private Sub hScrollB_Change()
+    On Error GoTo ErroScrollB
+    
+    If m_SincronizandoScroll Then Exit Sub
+    If fraA Is Nothing Or fraB Is Nothing Then Exit Sub
+    If hScrollA Is Nothing Or hScrollB Is Nothing Then Exit Sub
+    
+    m_SincronizandoScroll = True
+    
+    Dim valor As Single
+    valor = hScrollB.Value
+    m_ScrollPos = valor
+    
+    Call AplicarScrollHorizontal(valor)
+    hScrollA.Value = valor
+    
+    m_SincronizandoScroll = False
+    
+Sair:
+    Exit Sub
+    
+ErroScrollB:
+    m_SincronizandoScroll = False
+    Resume Sair
+End Sub
+
+'================================================================================
+' SUBROTINA PRIVADA: AplicarScrollHorizontal
+' PROPÓSITO: Mover todos os controles internos de fraA e fraB conforme offset
+'================================================================================
+Private Sub AplicarScrollHorizontal(pOffset As Single)
+    On Error Resume Next
+    
+    Dim ctrl As MSForms.Control
+    
+    For Each ctrl In fraA.Controls
+        If m_PosicoesSalvas Then
+            ctrl.Left = ctrl.Tag - pOffset
+        Else
+            ctrl.Tag = ctrl.Left
+            ctrl.Left = ctrl.Left - pOffset
+        End If
+    Next ctrl
+    
+    For Each ctrl In fraB.Controls
+        If m_PosicoesSalvas Then
+            ctrl.Left = ctrl.Tag - pOffset
+        Else
+            ctrl.Tag = ctrl.Left
+            ctrl.Left = ctrl.Left - pOffset
+        End If
+    Next ctrl
+    
+    ' Move timelines sincronizadas
+    If Not lblTituloA Is Nothing Then
+        If m_PosicoesSalvas Then
+            lblTituloA.Left = lblTituloA.Tag - pOffset
+        Else
+            lblTituloA.Tag = lblTituloA.Left
+            lblTituloA.Left = lblTituloA.Left - pOffset
+        End If
+    End If
+    
+    If Not lblTituloB Is Nothing Then
+        If m_PosicoesSalvas Then
+            lblTituloB.Left = lblTituloB.Tag - pOffset
+        Else
+            lblTituloB.Tag = lblTituloB.Left
+            lblTituloB.Left = lblTituloB.Left - pOffset
+        End If
+    End If
+    
+    m_PosicoesSalvas = True
+End Sub
+
+'================================================================================
+' SUBROTINA PRIVADA: ResetarPosicoesScroll
+' PROPÓSITO: Restaurar posições originais dos controles
+'================================================================================
+Private Sub ResetarPosicoesScroll()
+    On Error Resume Next
+    
+    Dim ctrl As MSForms.Control
+    
+    For Each ctrl In fraA.Controls
+        If IsNumeric(ctrl.Tag) Then
+            ctrl.Left = ctrl.Tag
+        End If
+    Next ctrl
+    
+    For Each ctrl In fraB.Controls
+        If IsNumeric(ctrl.Tag) Then
+            ctrl.Left = ctrl.Tag
+        End If
+    Next ctrl
+    
+    If Not lblTituloA Is Nothing Then
+        If IsNumeric(lblTituloA.Tag) Then lblTituloA.Left = lblTituloA.Tag
+    End If
+    
+    If Not lblTituloB Is Nothing Then
+        If IsNumeric(lblTituloB.Tag) Then lblTituloB.Left = lblTituloB.Tag
+    End If
+    
+    m_ScrollPos = 0
+    m_PosicoesSalvas = False
 End Sub
 
 '================================================================================
