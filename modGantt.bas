@@ -203,6 +203,186 @@ Public Function ConverterPeriodoParaTexto(pDataInicio As Date, pDataFim As Date)
 End Function
 
 '--------------------------------------------------------------------------------
+' FUNÇÃO: ObterDadosPlanejamentoProcessados
+' PROPÓSITO: Retornar coleção de OPs processadas (filtradas, ordenadas, conflitos)
+' PARÂMETROS: DataInicio, DataFim, Zoom, FiltroStatus, TextoBusca, OrdenarPor
+' RETORNO: Collection de clsCardProducao
+'--------------------------------------------------------------------------------
+Public Function ObterDadosPlanejamentoProcessados(pDataInicio As Date, pDataFim As Date, _
+                                                  Optional pZoom As Double = 1#, _
+                                                  Optional pFiltroStatus As String = "Todos", _
+                                                  Optional pTextoBusca As String = "", _
+                                                  Optional pOrdenarPor As String = "") As Collection
+    Dim dados() As Variant
+    Dim i As Long, j As Long
+    Dim totalLinhas As Long
+    Dim numOPs As Long
+    
+    Dim postos As New Collection
+    Dim colecaoOPs As New Collection
+    
+    On Error GoTo ErroProcessar
+    
+    dados = ObterDadosOPsEmArray()
+    If IsError(dados) Then
+        Err.Raise vbObjectError + 401, "ObterDadosPlanejamentoProcessados", "Não foi possível carregar dados da TabelaOPs."
+    End If
+    
+    totalLinhas = UBound(dados, 1)
+    numOPs = totalLinhas - 1
+    
+    If numOPs <= 0 Then
+        Set ObterDadosPlanejamentoProcessados = colecaoOPs
+        Exit Function
+    End If
+    
+    Dim colPostos As New Collection
+    Dim nomePosto As String
+    Dim existePosto As Boolean
+    
+    For i = 2 To totalLinhas
+        nomePosto = Trim(CStr(dados(i, 3)))
+        If nomePosto <> "" Then
+            existePosto = False
+            For j = 1 To colPostos.Count
+                If colPostos(j) = nomePosto Then
+                    existePosto = True
+                    Exit For
+                End If
+            Next j
+            If Not existePosto Then
+                colPostos.Add nomePosto
+            End If
+        End If
+    Next i
+    
+    Dim op As clsCardProducao
+    Dim posArrayOP As Long
+    posArrayOP = 2
+    
+    For i = 1 To numOPs
+        Set op = New clsCardProducao
+        With op
+            .ID_OP = CStr(dados(posArrayOP, 1))
+            .Produto = CStr(dados(posArrayOP, 2))
+            .Equipamento = CStr(dados(posArrayOP, 3))
+            .Quantidade = CLng(dados(posArrayOP, 4))
+            If IsDate(dados(posArrayOP, 5)) Then .DataInicio = CDate(dados(posArrayOP, 5))
+            If IsDate(dados(posArrayOP, 6)) Then .DataFim = CDate(dados(posArrayOP, 6))
+            .Duracao = CDbl(dados(posArrayOP, 7))
+            .Status = CStr(dados(posArrayOP, 8))
+        End With
+        colecaoOPs.Add op
+        posArrayOP = posArrayOP + 1
+    Next i
+    
+    If pOrdenarPor <> "" Then
+        Call OrdenarOPsParaExportacao(colecaoOPs, pOrdenarPor)
+    End If
+    
+    Dim conflitos As Collection
+    Set conflitos = DetectarConflitos(colecaoOPs, colPostos)
+    
+    Dim par As Collection
+    Dim idxA As Long, idxB As Long
+    Dim conflitoMarcado() As Boolean
+    ReDim conflitoMarcado(1 To colecaoOPs.Count)
+    
+    For i = 1 To conflitos.Count
+        Set par = conflitos(i)
+        If par.Count >= 2 Then
+            idxA = 0
+            idxB = 0
+            For j = 1 To colecaoOPs.Count
+                If colecaoOPs(j).ID_OP = par(1).ID_OP Then idxA = j
+                If colecaoOPs(j).ID_OP = par(2).ID_OP Then idxB = j
+            Next j
+            If idxA > 0 Then conflitoMarcado(idxA) = True
+            If idxB > 0 Then conflitoMarcado(idxB) = True
+        End If
+    Next i
+    
+    Dim opsFiltradas As New Collection
+    Dim textoBuscaLower As String
+    
+    If pTextoBusca <> "" Then
+        textoBuscaLower = LCase(Trim(pTextoBusca))
+    End If
+    
+    For i = 1 To colecaoOPs.Count
+        Set op = colecaoOPs(i)
+        
+        If pFiltroStatus <> "Todos" Then
+            If Trim(op.Status) <> Trim(pFiltroStatus) Then
+                GoTo ProximaOP
+            End If
+        End If
+        
+        If pTextoBusca <> "" Then
+            If LCase(Trim(op.ID_OP)) <> textoBuscaLower And _
+               LCase(Trim(op.Produto)) <> textoBuscaLower Then
+                GoTo ProximaOP
+            End If
+        End If
+        
+        If conflitoMarcado(i) Then
+            op.TemConflito = True
+        Else
+            op.TemConflito = False
+        End If
+        
+        opsFiltradas.Add op
+        
+ProximaOP:
+    Next i
+    
+    Set ObterDadosPlanejamentoProcessados = opsFiltradas
+    
+Sair:
+    Exit Function
+    
+ErroProcessar:
+    Err.Raise Err.Number, "ObterDadosPlanejamentoProcessados", Err.Description
+    Resume Sair
+End Function
+
+'--------------------------------------------------------------------------------
+' SUBROTINA PRIVADA: OrdenarOPsParaExportacao
+' PROPÓSITO: Ordenar coleção de OPs conforme campo especificado
+'--------------------------------------------------------------------------------
+Private Sub OrdenarOPsParaExportacao(pOPs As Collection, pCampo As String)
+    Dim i As Long, j As Long
+    Dim numOPs As Long
+    Dim temp As clsCardProducao
+    
+    numOPs = pOPs.Count
+    
+    For i = 1 To numOPs - 1
+        For j = i + 1 To numOPs
+            Dim trocar As Boolean
+            trocar = False
+            
+            Select Case pCampo
+                Case "ID_OP"
+                    If LCase(pOPs(i).ID_OP) > LCase(pOPs(j).ID_OP) Then trocar = True
+                Case "Data Início"
+                    If pOPs(i).DataInicio > pOPs(j).DataInicio Then trocar = True
+                Case "Duração"
+                    If pOPs(i).Duracao < pOPs(j).Duracao Then trocar = True
+                Case "Status"
+                    If LCase(pOPs(i).Status) > LCase(pOPs(j).Status) Then trocar = True
+            End Select
+            
+            If trocar Then
+                Set temp = pOPs(i)
+                Set pOPs(i) = pOPs(j)
+                Set pOPs(j) = temp
+            End If
+        Next j
+    Next i
+End Sub
+
+'--------------------------------------------------------------------------------
 ' SUBROTINA PÚBLICA: CarregarGantt
 ' PROPÓSITO: Renderizar visualização completa do planejamento (timeline + cards)
 ' PARÂMETROS: pContainer As MSForms.Frame, pHScroll As MSForms.ScrollBar (opcional)
@@ -447,70 +627,15 @@ Public Sub CarregarGantt(pContainer As MSForms.Frame, Optional pHScroll As MSFor
         End With
     Next i
     
-    '--- 10. Detecta conflitos --------------------------------------------------
-    Dim colecaoOPs As New Collection
-    Dim arrConflitos() As Boolean
-    ReDim arrConflitos(1 To numOPs)
+    '--- 10. Obtém dados processados (filtrados, ordenados, conflitos) -------------
+    Dim opsFiltradas As Collection
+    Set opsFiltradas = ObterDadosPlanejamentoProcessados(dataInicio, dataFim, pZoom, pFiltroStatus, pTextoBusca, pOrdenarPor)
     
-    Dim opI As clsCardProducao
-    Dim opJ As clsCardProducao
-    
-    Dim indicePostoI As Long
-    Dim indicePostoJ As Long
-    
-    Dim posArrayOP As Long
-    posArrayOP = 2
-    
-    ' Primeiro cria todos os objetos OP
-    Dim ops() As clsCardProducao
-    ReDim ops(1 To numOPs)
-    
-    For i = 1 To numOPs
-        Set ops(i) = New clsCardProducao
-        With ops(i)
-            .ID_OP = CStr(dados(posArrayOP, 1))
-            .Produto = CStr(dados(posArrayOP, 2))
-            .Equipamento = CStr(dados(posArrayOP, 3))
-            .Quantidade = CLng(dados(posArrayOP, 4))
-            If IsDate(dados(posArrayOP, 5)) Then .DataInicio = CDate(dados(posArrayOP, 5))
-            If IsDate(dados(posArrayOP, 6)) Then .DataFim = CDate(dados(posArrayOP, 6))
-            .Duracao = CDbl(dados(posArrayOP, 7))
-            .Status = CStr(dados(posArrayOP, 8))
-        End With
-        colecaoOPs.Add ops(i)
-        posArrayOP = posArrayOP + 1
-    Next i
-    
-    ' Ordena OPs conforme parametro
-    If pOrdenarPor <> "" Then
-        Call OrdenarOPs(ops, pOrdenarPor)
+    numOPs = opsFiltradas.Count
+    If numOPs <= 0 Then
+        pContainer.ScrollHeight = numPostos * ALTURA_LINHA_POSTO + 40 + 28
+        GoTo ConfigurarScroll
     End If
-    
-    ' Detecta conflitos
-    Dim conflitos As Collection
-    Set conflitos = DetectarConflitos(colecaoOPs, colPostos)
-    
-    ' Marca OPs com conflito
-    Dim conflitoMarcado() As Boolean
-    ReDim conflitoMarcado(1 To numOPs)
-    Dim conflitoCount As Long
-    conflitoCount = 0
-    
-    For i = 1 To conflitos.Count
-        Dim par As Collection
-        Set par = conflitos(i)
-        If par.Count >= 2 Then
-            Dim idxA As Long, idxB As Long
-            idxA = 0
-            idxB = 0
-            For j = 1 To numOPs
-                If ops(j).ID_OP = par(1).ID_OP Then idxA = j
-                If ops(j).ID_OP = par(2).ID_OP Then idxB = j
-            Next j
-            If idxA > 0 Then conflitoMarcado(idxA) = True
-            If idxB > 0 Then conflitoMarcado(idxB) = True
-        End If
-    Next i
     
     '--- 11. Renderiza cards das OPs ---------------------------------------------
     Dim alturaCard As Single
@@ -528,24 +653,7 @@ Public Sub CarregarGantt(pContainer As MSForms.Frame, Optional pHScroll As MSFor
     Dim corTexto As Long
     
     For i = 1 To numOPs
-        Set opAtual = ops(i)
-        
-        ' Aplica filtro de status
-        If pFiltroStatus <> "Todos" Then
-            If Trim(opAtual.Status) <> Trim(pFiltroStatus) Then
-                GoTo ProximaOP
-            End If
-        End If
-        
-        ' Aplica filtro de busca
-        If pTextoBusca <> "" Then
-            Dim textoBuscaLower As String
-            textoBuscaLower = LCase(Trim(pTextoBusca))
-            If LCase(Trim(opAtual.ID_OP)) <> textoBuscaLower And _
-               LCase(Trim(opAtual.Produto)) <> textoBuscaLower Then
-                GoTo ProximaOP
-            End If
-        End If
+        Set opAtual = opsFiltradas(i)
         
         indicePosto = ObterIndicePosto(opAtual.Equipamento, colPostos)
         posX = ConverterDataParaX(opAtual.DataInicio, escala)
@@ -568,7 +676,7 @@ Public Sub CarregarGantt(pContainer As MSForms.Frame, Optional pHScroll As MSFor
                 corCard = COR_CINZA_CARD
         End Select
         
-        If conflitoMarcado(i) Then
+        If opAtual.TemConflito Then
             corBorda = COR_ALERTA
         End If
         
@@ -679,7 +787,7 @@ Public Sub CarregarGantt(pContainer As MSForms.Frame, Optional pHScroll As MSFor
         End With
         
         ' Indicador de conflito (triângulo)
-        If conflitoMarcado(i) Then
+        If opAtual.TemConflito Then
             Dim lblAlerta As MSForms.Label
             Set lblAlerta = pContainer.Controls.Add("Forms.Label.1", "cardGanttAlerta_" & uniqueId, True)
             With lblAlerta
@@ -695,45 +803,12 @@ Public Sub CarregarGantt(pContainer As MSForms.Frame, Optional pHScroll As MSFor
                 .TextAlign = fmTextAlignCenter
             End With
         End If
-ProximaOP:
     Next i
-    
-    '--- 12. Linha AGORA --------------------------------------------------------
-    Dim agora As Date
-    agora = Now
-    
-    If agora >= dataInicio And agora <= dataFim Then
-        Dim posAgora As Double
-        posAgora = ConverterDataParaX(agora, escala)
-        
-        Dim linhaAgora As MSForms.Label
-        Set linhaAgora = pContainer.Controls.Add("Forms.Label.1", "lblGanttAgora", True)
-        With linhaAgora
-            .Left = posAgora
-            .Top = topoPostos
-            .Width = 2
-            .Height = numPostos * ALTURA_LINHA_POSTO + 40
-            .BackColor = COR_ALERTA
-        End With
-        
-        Dim lblAgora As MSForms.Label
-        Set lblAgora = pContainer.Controls.Add("Forms.Label.1", "lblGanttAgoraTxt", True)
-        With lblAgora
-            .Caption = "AGORA"
-            .Left = posAgora + 4
-            .Top = topoPostos
-            .Width = 50
-            .Height = 16
-            .Font.Size = 8
-            .Font.Bold = True
-            .ForeColor = COR_ALERTA
-            .BackColor = COR_FUNDO_TIMELINE
-            .TextAlign = fmTextAlignLeft
-        End With
-    End If
     
     ' Ajusta scroll vertical do container
     pContainer.ScrollHeight = numPostos * ALTURA_LINHA_POSTO + 40 + 28
+    
+ConfigurarScroll:
     
     '--- 13. Configura scroll horizontal -----------------------------------------
     If Not pHScroll Is Nothing Then

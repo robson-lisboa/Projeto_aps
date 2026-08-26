@@ -135,6 +135,9 @@ Private lblZoom As MSForms.Label
 Private cmdAtualizar As MSForms.CommandButton
 Private cmdAdicionarOP As MSForms.CommandButton
 Private cmdSimularProducao As MSForms.CommandButton
+Private cmdExportarPlanejamentoExcel As MSForms.CommandButton
+Private cmdExportarPlanejamentoPDF As MSForms.CommandButton
+Private cmdImprimirPlanejamento As MSForms.CommandButton
 Private cboFiltroStatus As MSForms.ComboBox
 Private txtBusca As MSForms.TextBox
 Private cboOrdenar As MSForms.ComboBox
@@ -628,6 +631,45 @@ Private Sub UserForm_Initialize()
         .Font.Size = 9
         .BackColor = COR_AMARELO
         .ForeColor = COR_TEXTO_ESCURO
+    End With
+    periodoLeft = periodoLeft + 86
+    
+    Set cmdExportarPlanejamentoExcel = Me.Controls.Add("Forms.CommandButton.1", "cmdExportarPlanejamentoExcel", True)
+    With cmdExportarPlanejamentoExcel
+        .Caption = "Exportar Excel"
+        .Left = periodoLeft
+        .Top = 12
+        .Width = 80
+        .Height = 24
+        .Font.Size = 9
+        .BackColor = COR_VERDE
+        .ForeColor = COR_TEXTO_CLARO
+    End With
+    periodoLeft = periodoLeft + 86
+    
+    Set cmdExportarPlanejamentoPDF = Me.Controls.Add("Forms.CommandButton.1", "cmdExportarPlanejamentoPDF", True)
+    With cmdExportarPlanejamentoPDF
+        .Caption = "Exportar PDF"
+        .Left = periodoLeft
+        .Top = 12
+        .Width = 80
+        .Height = 24
+        .Font.Size = 9
+        .BackColor = COR_AMARELO
+        .ForeColor = COR_TEXTO_ESCURO
+    End With
+    periodoLeft = periodoLeft + 86
+    
+    Set cmdImprimirPlanejamento = Me.Controls.Add("Forms.CommandButton.1", "cmdImprimirPlanejamento", True)
+    With cmdImprimirPlanejamento
+        .Caption = "Imprimir"
+        .Left = periodoLeft
+        .Top = 12
+        .Width = 80
+        .Height = 24
+        .Font.Size = 9
+        .BackColor = COR_AZUL
+        .ForeColor = COR_TEXTO_CLARO
     End With
     
     ' Scroll horizontal da área de produção
@@ -1297,6 +1339,21 @@ End Sub
 
 Private Sub cmdSimularProducao_Click()
     Call CarregarPlanejamento
+End Sub
+
+Private Sub cmdExportarPlanejamentoExcel_Click()
+    On Error Resume Next
+    Call ExportarPlanejamentoExcel(m_DataInicioPeriodo, m_DataFimPeriodo, m_FiltroStatus, m_TextoBusca, m_OrdenarPor)
+End Sub
+
+Private Sub cmdExportarPlanejamentoPDF_Click()
+    On Error Resume Next
+    Call ExportarPlanejamentoPDF(m_DataInicioPeriodo, m_DataFimPeriodo, m_FiltroStatus, m_TextoBusca, m_OrdenarPor)
+End Sub
+
+Private Sub cmdImprimirPlanejamento_Click()
+    On Error Resume Next
+    Call ImprimirPlanejamento(m_DataInicioPeriodo, m_DataFimPeriodo, m_FiltroStatus, m_TextoBusca, m_OrdenarPor)
 End Sub
 
 Private Sub cboFiltroStatus_Change()

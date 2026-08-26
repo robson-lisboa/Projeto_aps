@@ -669,3 +669,279 @@ Private Function GerarNomeArquivo(pPrefixo As String, pExtensao As String) As St
     
     On Error GoTo 0
 End Function
+
+'--------------------------------------------------------------------------------
+' FUNÇÃO: EscreverDadosPlanejamento
+' PROPÓSITO: Escrever dados do planejamento em uma planilha
+' PARÂMETROS: ws, periodoInicio, periodoFim, postoFiltro, produtoFiltro, statusFiltro
+' RETORNO: Próxima linha disponível
+'--------------------------------------------------------------------------------
+Private Function EscreverDadosPlanejamento(ws As Worksheet, _
+                                           pPeriodoInicio As Date, _
+                                           pPeriodoFim As Date, _
+                                           pFiltroStatus As String, _
+                                           pTextoBusca As String, _
+                                           pOrdenarPor As String) As Long
+    Dim linha As Long
+    Dim dadosOPs As Variant
+    Dim ops As Collection
+    Dim i As Long
+    Dim op As clsCardProducao
+    
+    On Error GoTo ErroEscrever
+    
+    ' Título
+    ws.Range("A1").Value = "APS PURAN — PLANEJAMENTO DE PRODUÇÃO"
+    ws.Range("A1").Font.Size = 16
+    ws.Range("A1").Font.Bold = True
+    ws.Range("A1").HorizontalAlignment = xlCenter
+    ws.Range("A1").VerticalAlignment = xlCenter
+    ws.Range("A1").Resize(1, 9).Merge
+    ws.Range("A1").RowHeight = 30
+    
+    ' Informações
+    linha = 3
+    ws.Cells(linha, 1).Value = "Data de geração:"
+    ws.Cells(linha, 2).Value = Format(Now, "dd/mm/yyyy HH:MM")
+    ws.Cells(linha, 1).Font.Bold = True
+    
+    linha = 4
+    ws.Cells(linha, 1).Value = "Período:"
+    ws.Cells(linha, 2).Value = Format(pPeriodoInicio, "dd/mm/yyyy") & " a " & Format(pPeriodoFim, "dd/mm/yyyy")
+    ws.Cells(linha, 1).Font.Bold = True
+    
+    linha = 5
+    ws.Cells(linha, 1).Value = "Filtro de Status:"
+    ws.Cells(linha, 2).Value = IIf(pFiltroStatus = "", "Todos", pFiltroStatus)
+    ws.Cells(linha, 1).Font.Bold = True
+    
+    linha = 6
+    ws.Cells(linha, 1).Value = "Busca:"
+    ws.Cells(linha, 2).Value = IIf(pTextoBusca = "", "(nenhuma)", pTextoBusca)
+    ws.Cells(linha, 1).Font.Bold = True
+    
+    linha = 7
+    ws.Cells(linha, 1).Value = "Ordenação:"
+    ws.Cells(linha, 2).Value = IIf(pOrdenarPor = "", "(padrão)", pOrdenarPor)
+    ws.Cells(linha, 1).Font.Bold = True
+    
+    ' Cabeçalho da tabela
+    linha = 9
+    ws.Cells(linha, 1).Value = "DETALHAMENTO DAS OPs"
+    ws.Cells(linha, 1).Font.Size = 12
+    ws.Cells(linha, 1).Font.Bold = True
+    ws.Cells(linha, 1).Resize(1, 9).Merge
+    
+    linha = 11
+    ws.Cells(linha, 1).Value = "ID_OP"
+    ws.Cells(linha, 2).Value = "Produto"
+    ws.Cells(linha, 3).Value = "Equipamento"
+    ws.Cells(linha, 4).Value = "Quantidade"
+    ws.Cells(linha, 5).Value = "Data Início"
+    ws.Cells(linha, 6).Value = "Data Fim"
+    ws.Cells(linha, 7).Value = "Duração (h)"
+    ws.Cells(linha, 8).Value = "Status"
+    ws.Cells(linha, 9).Value = "Conflito"
+    ws.Range(ws.Cells(linha, 1), ws.Cells(linha, 9)).Font.Bold = True
+    ws.Range(ws.Cells(linha, 1), ws.Cells(linha, 9)).Interior.Color = RGB(220, 220, 220)
+    
+    Set ops = ObterDadosPlanejamentoProcessados(pPeriodoInicio, pPeriodoFim, 1#, pFiltroStatus, pTextoBusca, pOrdenarPor)
+    
+    If ops.Count <= 0 Then
+        linha = linha + 1
+        ws.Cells(linha, 1).Value = "Nenhuma OP encontrada para os filtros selecionados."
+        EscreverDadosPlanejamento = linha + 1
+        Exit Function
+    End If
+    
+    linha = 12
+    For i = 1 To ops.Count
+        Set op = ops(i)
+        
+        ws.Cells(linha, 1).Value = op.ID_OP
+        ws.Cells(linha, 2).Value = op.Produto
+        ws.Cells(linha, 3).Value = op.Equipamento
+        ws.Cells(linha, 4).Value = op.Quantidade
+        ws.Cells(linha, 5).Value = IIf(IsDate(op.DataInicio), op.DataInicio, "")
+        ws.Cells(linha, 6).Value = IIf(IsDate(op.DataFim), op.DataFim, "")
+        ws.Cells(linha, 7).Value = op.Duracao
+        ws.Cells(linha, 8).Value = op.Status
+        ws.Cells(linha, 9).Value = IIf(op.TemConflito, "Sim", "Não")
+        
+        If IsDate(op.DataInicio) Then ws.Cells(linha, 5).NumberFormat = "dd/mm/yyyy HH:MM"
+        If IsDate(op.DataFim) Then ws.Cells(linha, 6).NumberFormat = "dd/mm/yyyy HH:MM"
+        ws.Cells(linha, 7).NumberFormat = "0.00"
+        
+        linha = linha + 1
+    Next i
+    
+    ' Formatação
+    ws.Columns("A:I").AutoFit
+    ws.Range("A1").Resize(linha - 1, 9).Borders.LineStyle = xlContinuous
+    ws.Range("A1").Resize(linha - 1, 9).HorizontalAlignment = xlCenter
+    ws.Range("A1").Resize(linha - 1, 9).VerticalAlignment = xlCenter
+    
+    EscreverDadosPlanejamento = linha
+    
+Sair:
+    Exit Function
+    
+ErroEscrever:
+    Err.Raise Err.Number, "EscreverDadosPlanejamento", Err.Description
+    Resume Sair
+End Function
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: ExportarPlanejamentoExcel
+' PROPÓSITO: Exportar planejamento para Excel
+'--------------------------------------------------------------------------------
+Public Sub ExportarPlanejamentoExcel(pPeriodoInicio As Date, _
+                                     pPeriodoFim As Date, _
+                                     pFiltroStatus As String = "Todos", _
+                                     pTextoBusca As String = "", _
+                                     pOrdenarPor As String = "")
+    Dim ws As Worksheet
+    Dim wb As Workbook
+    Dim nomeArquivo As String
+    
+    On Error GoTo ErroExportarExcel
+    
+    Set wb = Workbooks.Add
+    Set ws = wb.Worksheets(1)
+    ws.Name = "Planejamento Produção"
+    
+    ws.PageSetup.Orientation = xlLandscape
+    ws.PageSetup.PaperSize = xlPaperA4
+    ws.PageSetup.Margins.Left = 0.5
+    ws.PageSetup.Margins.Right = 0.5
+    ws.PageSetup.Margins.Top = 0.75
+    ws.PageSetup.Margins.Bottom = 0.75
+    ws.PageSetup.CenterHorizontally = True
+    ws.PageSetup.CenterVertically = False
+    ws.PageSetup.PrintTitleRows = "$1:$11"
+    
+    Call EscreverDadosPlanejamento(ws, pPeriodoInicio, pPeriodoFim, pFiltroStatus, pTextoBusca, pOrdenarPor)
+    
+    nomeArquivo = GerarNomeArquivo("APS_PURAN_Planejamento", "xlsx")
+    
+    If nomeArquivo <> "" Then
+        wb.SaveAs Filename:=nomeArquivo, FileFormat:=xlOpenXMLWorkbook
+        wb.Close SaveChanges:=False
+        MsgBox "Planejamento exportado com sucesso!" & vbCrLf & nomeArquivo, vbInformation, "APS PURAN"
+    Else
+        wb.Close SaveChanges:=False
+    End If
+    
+Sair:
+    Exit Sub
+    
+ErroExportarExcel:
+    MsgBox "Erro ao exportar planejamento: " & Err.Description, vbCritical, "APS PURAN"
+    If Not wb Is Nothing Then
+        wb.Close SaveChanges:=False
+    End If
+    Resume Sair
+End Sub
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: ExportarPlanejamentoPDF
+' PROPÓSITO: Exportar planejamento para PDF
+'--------------------------------------------------------------------------------
+Public Sub ExportarPlanejamentoPDF(pPeriodoInicio As Date, _
+                                   pPeriodoFim As Date, _
+                                   pFiltroStatus As String = "Todos", _
+                                   pTextoBusca As String = "", _
+                                   pOrdenarPor As String = "")
+    Dim ws As Worksheet
+    Dim wb As Workbook
+    Dim nomeArquivo As String
+    
+    On Error GoTo ErroExportarPDF
+    
+    Set wb = Workbooks.Add
+    Set ws = wb.Worksheets(1)
+    ws.Name = "Planejamento Produção"
+    
+    ws.PageSetup.Orientation = xlLandscape
+    ws.PageSetup.PaperSize = xlPaperA4
+    ws.PageSetup.Margins.Left = 0.5
+    ws.PageSetup.Margins.Right = 0.5
+    ws.PageSetup.Margins.Top = 0.75
+    ws.PageSetup.Margins.Bottom = 0.75
+    ws.PageSetup.CenterHorizontally = True
+    ws.PageSetup.CenterVertically = False
+    ws.PageSetup.PrintTitleRows = "$1:$11"
+    ws.PageSetup.FitToPagesWide = 1
+    ws.PageSetup.FitToPagesTall = False
+    
+    Call EscreverDadosPlanejamento(ws, pPeriodoInicio, pPeriodoFim, pFiltroStatus, pTextoBusca, pOrdenarPor)
+    
+    nomeArquivo = GerarNomeArquivo("APS_PURAN_Planejamento", "pdf")
+    
+    If nomeArquivo <> "" Then
+        ws.ExportAsFixedFormat Type:=xlTypePDF, Filename:=nomeArquivo, _
+                               Quality:=xlQualityStandard, IncludeDocProperties:=True, _
+                               IgnorePrintAreas:=False, OpenAfterPublish:=True
+        wb.Close SaveChanges:=False
+        MsgBox "Planejamento PDF gerado com sucesso!" & vbCrLf & nomeArquivo, vbInformation, "APS PURAN"
+    Else
+        wb.Close SaveChanges:=False
+    End If
+    
+Sair:
+    Exit Sub
+    
+ErroExportarPDF:
+    MsgBox "Erro ao gerar PDF do planejamento: " & Err.Description, vbCritical, "APS PURAN"
+    If Not wb Is Nothing Then
+        wb.Close SaveChanges:=False
+    End If
+    Resume Sair
+End Sub
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: ImprimirPlanejamento
+' PROPÓSITO: Imprimir planejamento atual
+'--------------------------------------------------------------------------------
+Public Sub ImprimirPlanejamento(pPeriodoInicio As Date, _
+                                pPeriodoFim As Date, _
+                                pFiltroStatus As String = "Todos", _
+                                pTextoBusca As String = "", _
+                                pOrdenarPor As String = "")
+    Dim ws As Worksheet
+    Dim wb As Workbook
+    
+    On Error GoTo ErroImprimir
+    
+    Set wb = Workbooks.Add
+    Set ws = wb.Worksheets(1)
+    ws.Name = "Planejamento Produção"
+    
+    ws.PageSetup.Orientation = xlLandscape
+    ws.PageSetup.PaperSize = xlPaperA4
+    ws.PageSetup.Margins.Left = 0.5
+    ws.PageSetup.Margins.Right = 0.5
+    ws.PageSetup.Margins.Top = 0.75
+    ws.PageSetup.Margins.Bottom = 0.75
+    ws.PageSetup.CenterHorizontally = True
+    ws.PageSetup.CenterVertically = False
+    ws.PageSetup.PrintTitleRows = "$1:$11"
+    ws.PageSetup.FitToPagesWide = 1
+    ws.PageSetup.FitToPagesTall = False
+    
+    Call EscreverDadosPlanejamento(ws, pPeriodoInicio, pPeriodoFim, pFiltroStatus, pTextoBusca, pOrdenarPor)
+    
+    ws.PrintOut Copies:=1, Collate:=True
+    wb.Close SaveChanges:=False
+    MsgBox "Planejamento enviado para impressora.", vbInformation, "APS PURAN"
+    
+Sair:
+    Exit Sub
+    
+ErroImprimir:
+    MsgBox "Erro ao imprimir planejamento: " & Err.Description, vbCritical, "APS PURAN"
+    If Not wb Is Nothing Then
+        wb.Close SaveChanges:=False
+    End If
+    Resume Sair
+End Sub
