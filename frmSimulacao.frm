@@ -37,7 +37,6 @@ Option Explicit
 
 '=== CONTROLES PRINCIPAIS ======================================================
 Private lstSimulacoes As MSForms.ListBox
-Private fraAcoes As MSForms.Frame
 Private fraVisualizacao As MSForms.Frame
 Private hScrollSimulacao As MSForms.ScrollBar
 

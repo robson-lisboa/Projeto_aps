@@ -38,7 +38,6 @@ Option Explicit
 Private m_ID_OP As String
 Private btnEditar As MSForms.CommandButton
 Private btnExcluir As MSForms.CommandButton
-Private btnDuplicar As MSForms.CommandButton
 Private btnSalvar As MSForms.CommandButton
 Private btnCancelar As MSForms.CommandButton
 
@@ -57,7 +56,6 @@ Private txtObservacao As MSForms.TextBox
 ' Estado de edição
 Private m_Editando As Boolean
 Private m_SimulacaoAtiva As String
-Private m_LabelDetalhe As MSForms.Label
 
 Private Sub UserForm_Initialize()
     On Error GoTo ErroInicializacao
@@ -407,128 +405,6 @@ Private Sub CriarControlesEdicao()
         .BackColor = 255
         .ForeColor = 16777215
     End With
-End Sub
-
-Public Sub CarregarDetalhes(pID_OP As String)
-    On Error GoTo ErroCarregar
-    
-    m_ID_OP = pID_OP
-    Me.Caption = "Detalhes da OP: " & pID_OP
-    
-    Dim dados() As Variant
-    dados = ObterDadosOPsEmArray()
-    
-    If IsError(dados) Then Exit Sub
-    
-    Dim i As Long
-    Dim totalLinhas As Long
-    totalLinhas = UBound(dados, 1)
-    
-    For i = 2 To totalLinhas
-        If CStr(dados(i, 1)) = pID_OP Then
-            Dim lbl As MSForms.Label
-            Set lbl = Me.Controls.Add("Forms.Label.1", "lblDetalhe", True)
-            With lbl
-                .Caption = "ID OP: " & CStr(dados(i, 1)) & vbCrLf & _
-                           "Produto: " & CStr(dados(i, 2)) & vbCrLf & _
-                           "Equipamento: " & CStr(dados(i, 3)) & vbCrLf & _
-                           "Quantidade: " & CStr(dados(i, 4)) & vbCrLf & _
-                           "Início: " & Format(CDate(dados(i, 5)), "dd/mm/yyyy HH:MM") & vbCrLf & _
-                           "Fim: " & Format(CDate(dados(i, 6)), "dd/mm/yyyy HH:MM") & vbCrLf & _
-                           "Duração: " & Format(CDbl(dados(i, 7)), "0.0") & "h" & vbCrLf & _
-                           "Status: " & CStr(dados(i, 8))
-                .Left = 20
-                .Top = 20
-                .Width = 440
-                .Height = 300
-                .Font.Size = 10
-            End With
-            Exit For
-        End If
-    Next i
-    
-Sair:
-    Exit Sub
-    
-ErroCarregar:
-    MsgBox "Erro ao carregar detalhes: " & Err.Description, vbCritical, "APS PURAN"
-    Resume Sair
-End Sub
-
-Private Sub btnEditar_Click()
-    On Error Resume Next
-    frmCadastroOP.CarregarParaEdicao m_ID_OP
-    frmCadastroOP.Show vbModal
-    Unload Me
-End Sub
-
-Private Sub btnExcluir_Click()
-    On Error GoTo ErroExcluir
-    
-    Dim resposta As VbMsgBoxResult
-    resposta = MsgBox("Deseja realmente excluir a OP " & m_ID_OP & "?", _
-                      vbQuestion + vbYesNo, "Confirmação de Exclusão")
-    If resposta = vbNo Then Exit Sub
-    
-    Call ExcluirOP(m_ID_OP)
-    MsgBox "OP excluída com sucesso!", vbInformation, "APS PURAN"
-    Unload Me
-    
-Sair:
-    Exit Sub
-    
-ErroExcluir:
-    MsgBox "Erro ao excluir OP: " & Err.Description, vbCritical, "APS PURAN"
-    Resume Sair
-End Sub
-
-Private Sub btnDuplicar_Click()
-    On Error GoTo ErroDuplicar
-    
-    Dim dados() As Variant
-    dados = ObterDadosOPsEmArray()
-    
-    If IsError(dados) Then Exit Sub
-    
-    Dim i As Long
-    Dim totalLinhas As Long
-    totalLinhas = UBound(dados, 1)
-    
-    Dim idOP As String
-    Dim produto As String
-    Dim equipamento As String
-    Dim quantidade As Long
-    Dim dataInicio As Date
-    Dim dataFim As Date
-    Dim duracao As Double
-    Dim status As String
-    
-    For i = 2 To totalLinhas
-        If CStr(dados(i, 1)) = m_ID_OP Then
-            idOP = "Copia_" & CStr(dados(i, 1))
-            produto = CStr(dados(i, 2))
-            equipamento = CStr(dados(i, 3))
-            quantidade = CLng(dados(i, 4))
-            dataInicio = CDate(dados(i, 5))
-            dataFim = CDate(dados(i, 6))
-            duracao = CDbl(dados(i, 7))
-            status = CStr(dados(i, 8))
-            Exit For
-        End If
-    Next i
-    
-    If idOP = "" Then Exit Sub
-    
-    frmCadastroOP.CarregarParaCopia idOP, produto, equipamento, quantidade, dataInicio, dataFim, status
-    frmCadastroOP.Show vbModal
-    Unload Me
-    
-Sair:
-    Exit Sub
-    
-ErroDuplicar:
-    MsgBox "Erro ao duplicar OP: " & Err.Description, vbCritical, "APS PURAN"
-    Resume Sair
 End Sub
 
 '================================================================================
