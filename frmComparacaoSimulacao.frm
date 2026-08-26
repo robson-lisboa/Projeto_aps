@@ -40,6 +40,9 @@ Private cboSimulacaoA As MSForms.ComboBox
 Private cboSimulacaoB As MSForms.ComboBox
 Private btnComparar As MSForms.CommandButton
 Private btnAtualizar As MSForms.CommandButton
+Private btnExportarComparacaoExcel As MSForms.CommandButton
+Private btnExportarComparacaoPDF As MSForms.CommandButton
+Private btnImprimirComparacao As MSForms.CommandButton
 Private btnFechar As MSForms.CommandButton
 
 Private fraA As MSForms.Frame
@@ -188,10 +191,49 @@ Private Sub CriarControles()
         .ForeColor = COR_TEXTO_CLARO
     End With
     
+    Set btnExportarComparacaoExcel = Me.Controls.Add("Forms.CommandButton.1", "btnExportarComparacaoExcel", True)
+    With btnExportarComparacaoExcel
+        .Caption = "Exportar Excel"
+        .Left = 272
+        .Top = 88
+        .Width = 120
+        .Height = 30
+        .Font.Size = 10
+        .Font.Bold = True
+        .BackColor = COR_VERDE
+        .ForeColor = COR_TEXTO_CLARO
+    End With
+    
+    Set btnExportarComparacaoPDF = Me.Controls.Add("Forms.CommandButton.1", "btnExportarComparacaoPDF", True)
+    With btnExportarComparacaoPDF
+        .Caption = "Exportar PDF"
+        .Left = 402
+        .Top = 88
+        .Width = 120
+        .Height = 30
+        .Font.Size = 10
+        .Font.Bold = True
+        .BackColor = COR_AMARELO
+        .ForeColor = COR_TEXTO_ESCURO
+    End With
+    
+    Set btnImprimirComparacao = Me.Controls.Add("Forms.CommandButton.1", "btnImprimirComparacao", True)
+    With btnImprimirComparacao
+        .Caption = "Imprimir"
+        .Left = 532
+        .Top = 88
+        .Width = 120
+        .Height = 30
+        .Font.Size = 10
+        .Font.Bold = True
+        .BackColor = COR_AZUL
+        .ForeColor = COR_TEXTO_CLARO
+    End With
+    
     Set btnFechar = Me.Controls.Add("Forms.CommandButton.1", "btnFechar", True)
     With btnFechar
         .Caption = "Fechar"
-        .Left = 272
+        .Left = 662
         .Top = 88
         .Width = 120
         .Height = 30
@@ -373,6 +415,21 @@ End Sub
 Private Sub btnFechar_Click()
     On Error Resume Next
     Unload Me
+End Sub
+
+Private Sub btnExportarComparacaoExcel_Click()
+    On Error Resume Next
+    Call ExportarComparacaoExcel(m_ID_SimulacaoA, m_ID_SimulacaoB)
+End Sub
+
+Private Sub btnExportarComparacaoPDF_Click()
+    On Error Resume Next
+    Call ExportarComparacaoPDF(m_ID_SimulacaoA, m_ID_SimulacaoB)
+End Sub
+
+Private Sub btnImprimirComparacao_Click()
+    On Error Resume Next
+    Call ImprimirComparacao(m_ID_SimulacaoA, m_ID_SimulacaoB)
 End Sub
 
 '================================================================================

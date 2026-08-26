@@ -1272,3 +1272,371 @@ ErroImprimir:
     End If
     Resume Sair
 End Sub
+
+'--------------------------------------------------------------------------------
+' FUNÇÃO: ObterProdutoPorID
+' PROPÓSITO: Buscar nome do produto por ID_OP em uma simulação
+'--------------------------------------------------------------------------------
+Private Function ObterProdutoPorID(pID_Simulacao As String, pID_OP As String) As String
+    Dim dados As Variant
+    Dim i As Long
+    Dim totalLinhas As Long
+    
+    On Error Resume Next
+    
+    dados = ObterOPsSimulacaoEmArray(pID_Simulacao)
+    If IsError(dados) Then
+        ObterProdutoPorID = ""
+        Exit Function
+    End If
+    
+    totalLinhas = UBound(dados, 1)
+    For i = 1 To totalLinhas
+        If CStr(dados(i, 2)) = pID_OP Then
+            ObterProdutoPorID = CStr(dados(i, 4))
+            Exit Function
+        End If
+    Next i
+    
+    ObterProdutoPorID = ""
+End Function
+
+'--------------------------------------------------------------------------------
+' FUNÇÃO: EscreverDadosComparacao
+' PROPÓSITO: Escrever dados da comparação em uma planilha
+' PARÂMETROS: ws, simulacaoA, simulacaoB, resultados
+' RETORNO: Próxima linha disponível
+'--------------------------------------------------------------------------------
+Private Function EscreverDadosComparacao(ws As Worksheet, _
+                                         pSimulacaoA As String, _
+                                         pSimulacaoB As String, _
+                                         pResultados As Collection) As Long
+    Dim linha As Long
+    Dim i As Long
+    Dim item As clsComparacaoOP
+    Dim totalIguais As Long
+    Dim totalAlteradas As Long
+    Dim totalSoA As Long
+    Dim totalSoB As Long
+    
+    On Error GoTo ErroEscrever
+    
+    ' Título
+    ws.Range("A1").Value = "APS PURAN — COMPARAÇÃO DE SIMULAÇÕES"
+    ws.Range("A1").Font.Size = 16
+    ws.Range("A1").Font.Bold = True
+    ws.Range("A1").HorizontalAlignment = xlCenter
+    ws.Range("A1").VerticalAlignment = xlCenter
+    ws.Range("A1").Resize(1, 9).Merge
+    ws.Range("A1").RowHeight = 30
+    
+    ' Informações
+    linha = 3
+    ws.Cells(linha, 1).Value = "Simulação A:"
+    ws.Cells(linha, 2).Value = pSimulacaoA
+    ws.Cells(linha, 1).Font.Bold = True
+    
+    linha = 4
+    ws.Cells(linha, 1).Value = "Simulação B:"
+    ws.Cells(linha, 2).Value = pSimulacaoB
+    ws.Cells(linha, 1).Font.Bold = True
+    
+    linha = 5
+    ws.Cells(linha, 1).Value = "Data de geração:"
+    ws.Cells(linha, 2).Value = Format(Now, "dd/mm/yyyy HH:MM")
+    ws.Cells(linha, 1).Font.Bold = True
+    
+    ' Contadores
+    totalIguais = 0
+    totalAlteradas = 0
+    totalSoA = 0
+    totalSoB = 0
+    
+    For i = 1 To pResultados.Count
+        Set item = pResultados(i)
+        Select Case item.TipoDiferenca
+            Case "IGUAL": totalIguais = totalIguais + 1
+            Case "ALTERADA": totalAlteradas = totalAlteradas + 1
+            Case "SOMENTE_A": totalSoA = totalSoA + 1
+            Case "SOMENTE_B": totalSoB = totalSoB + 1
+        End Select
+    Next i
+    
+    linha = 7
+    ws.Cells(linha, 1).Value = "RESUMO"
+    ws.Cells(linha, 1).Font.Size = 12
+    ws.Cells(linha, 1).Font.Bold = True
+    ws.Cells(linha, 1).Resize(1, 5).Merge
+    
+    linha = 8
+    ws.Cells(linha, 1).Value = "Total comparadas:"
+    ws.Cells(linha, 2).Value = pResultados.Count
+    ws.Cells(linha, 1).Font.Bold = True
+    
+    linha = 9
+    ws.Cells(linha, 1).Value = "IGUAIS:"
+    ws.Cells(linha, 2).Value = totalIguais
+    ws.Cells(linha, 1).Font.Bold = True
+    
+    linha = 10
+    ws.Cells(linha, 1).Value = "ALTERADAS:"
+    ws.Cells(linha, 2).Value = totalAlteradas
+    ws.Cells(linha, 1).Font.Bold = True
+    
+    linha = 11
+    ws.Cells(linha, 1).Value = "SOMENTE NA SIMULAÇÃO A:"
+    ws.Cells(linha, 2).Value = totalSoA
+    ws.Cells(linha, 1).Font.Bold = True
+    
+    linha = 12
+    ws.Cells(linha, 1).Value = "SOMENTE NA SIMULAÇÃO B:"
+    ws.Cells(linha, 2).Value = totalSoB
+    ws.Cells(linha, 1).Font.Bold = True
+    
+    ' Cabeçalho da tabela
+    linha = 14
+    ws.Cells(linha, 1).Value = "DETALHAMENTO DA COMPARAÇÃO"
+    ws.Cells(linha, 1).Font.Size = 12
+    ws.Cells(linha, 1).Font.Bold = True
+    ws.Cells(linha, 1).Resize(1, 9).Merge
+    
+    linha = 16
+    ws.Cells(linha, 1).Value = "ID_OP"
+    ws.Cells(linha, 2).Value = "Produto"
+    ws.Cells(linha, 3).Value = "Equipamento A"
+    ws.Cells(linha, 4).Value = "Data Início A"
+    ws.Cells(linha, 5).Value = "Data Fim A"
+    ws.Cells(linha, 6).Value = "Duração A (h)"
+    ws.Cells(linha, 7).Value = "Status A"
+    ws.Cells(linha, 8).Value = "Equipamento B"
+    ws.Cells(linha, 9).Value = "Classificação"
+    ws.Range(ws.Cells(linha, 1), ws.Cells(linha, 9)).Font.Bold = True
+    ws.Range(ws.Cells(linha, 1), ws.Cells(linha, 9)).Interior.Color = RGB(220, 220, 220)
+    
+    linha = 17
+    For i = 1 To pResultados.Count
+        Set item = pResultados(i)
+        Dim produto As String
+        produto = ObterProdutoPorID(pSimulacaoA, item.ID_OP)
+        If produto = "" Then produto = ObterProdutoPorID(pSimulacaoB, item.ID_OP)
+        
+        ws.Cells(linha, 1).Value = item.ID_OP
+        ws.Cells(linha, 2).Value = produto
+        ws.Cells(linha, 3).Value = IIf(item.ExisteA, item.EquipamentoA, "")
+        ws.Cells(linha, 4).Value = IIf(item.ExisteA And IsDate(item.DataInicioA), item.DataInicioA, "")
+        ws.Cells(linha, 5).Value = IIf(item.ExisteA And IsDate(item.DataFimA), item.DataFimA, "")
+        ws.Cells(linha, 6).Value = IIf(item.ExisteA, item.DuracaoA, "")
+        ws.Cells(linha, 7).Value = IIf(item.ExisteA, item.StatusA, "")
+        ws.Cells(linha, 8).Value = IIf(item.ExisteB, item.EquipamentoB, "")
+        ws.Cells(linha, 9).Value = item.TipoDiferenca
+        
+        If IsDate(item.DataInicioA) Then ws.Cells(linha, 4).NumberFormat = "dd/mm/yyyy HH:MM"
+        If IsDate(item.DataFimA) Then ws.Cells(linha, 5).NumberFormat = "dd/mm/yyyy HH:MM"
+        If item.ExisteA Then ws.Cells(linha, 6).NumberFormat = "0.00"
+        
+        ' Destaque visual para alteradas
+        If item.TipoDiferenca = "ALTERADA" Then
+            ws.Range(ws.Cells(linha, 1), ws.Cells(linha, 9)).Interior.Color = RGB(255, 230, 230)
+        ElseIf item.TipoDiferenca = "SOMENTE_A" Then
+            ws.Range(ws.Cells(linha, 1), ws.Cells(linha, 9)).Interior.Color = RGB(220, 235, 255)
+        ElseIf item.TipoDiferenca = "SOMENTE_B" Then
+            ws.Range(ws.Cells(linha, 1), ws.Cells(linha, 9)).Interior.Color = RGB(220, 255, 220)
+        End If
+        
+        linha = linha + 1
+    Next i
+    
+    ' Formatação
+    ws.Columns("A:I").AutoFit
+    ws.Range("A1").Resize(linha - 1, 9).Borders.LineStyle = xlContinuous
+    ws.Range("A1").Resize(linha - 1, 9).HorizontalAlignment = xlCenter
+    ws.Range("A1").Resize(linha - 1, 9).VerticalAlignment = xlCenter
+    
+    EscreverDadosComparacao = linha
+    
+Sair:
+    Exit Function
+    
+ErroEscrever:
+    Err.Raise Err.Number, "EscreverDadosComparacao", Err.Description
+    Resume Sair
+End Function
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: ExportarComparacaoExcel
+' PROPÓSITO: Exportar comparação para Excel
+'--------------------------------------------------------------------------------
+Public Sub ExportarComparacaoExcel(pSimulacaoA As String, pSimulacaoB As String)
+    Dim ws As Worksheet
+    Dim wb As Workbook
+    Dim resultados As Collection
+    Dim nomeArquivo As String
+    
+    On Error GoTo ErroExportarExcel
+    
+    If pSimulacaoA = "" Or pSimulacaoB = "" Then
+        MsgBox "Selecione as duas simulações para exportar.", vbExclamation, "Validação"
+        Exit Sub
+    End If
+    
+    Set resultados = CompararSimulacoes(pSimulacaoA, pSimulacaoB)
+    If resultados.Count = 0 Then
+        MsgBox "Nenhuma diferença encontrada para exportar.", vbExclamation, "Validação"
+        Exit Sub
+    End If
+    
+    Set wb = Workbooks.Add
+    Set ws = wb.Worksheets(1)
+    ws.Name = "Comparação Simulações"
+    
+    ws.PageSetup.Orientation = xlLandscape
+    ws.PageSetup.PaperSize = xlPaperA4
+    ws.PageSetup.Margins.Left = 0.5
+    ws.PageSetup.Margins.Right = 0.5
+    ws.PageSetup.Margins.Top = 0.75
+    ws.PageSetup.Margins.Bottom = 0.75
+    ws.PageSetup.CenterHorizontally = True
+    ws.PageSetup.CenterVertically = False
+    ws.PageSetup.PrintTitleRows = "$1:$16"
+    
+    Call EscreverDadosComparacao(ws, pSimulacaoA, pSimulacaoB, resultados)
+    
+    nomeArquivo = GerarNomeArquivo("APS_PURAN_Comparacao_" & pSimulacaoA & "_vs_" & pSimulacaoB, "xlsx")
+    
+    If nomeArquivo <> "" Then
+        wb.SaveAs Filename:=nomeArquivo, FileFormat:=xlOpenXMLWorkbook
+        wb.Close SaveChanges:=False
+        MsgBox "Comparação exportada com sucesso!" & vbCrLf & nomeArquivo, vbInformation, "APS PURAN"
+    Else
+        wb.Close SaveChanges:=False
+    End If
+    
+Sair:
+    Exit Sub
+    
+ErroExportarExcel:
+    MsgBox "Erro ao exportar comparação: " & Err.Description, vbCritical, "APS PURAN"
+    If Not wb Is Nothing Then
+        wb.Close SaveChanges:=False
+    End If
+    Resume Sair
+End Sub
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: ExportarComparacaoPDF
+' PROPÓSITO: Exportar comparação para PDF
+'--------------------------------------------------------------------------------
+Public Sub ExportarComparacaoPDF(pSimulacaoA As String, pSimulacaoB As String)
+    Dim ws As Worksheet
+    Dim wb As Workbook
+    Dim resultados As Collection
+    Dim nomeArquivo As String
+    
+    On Error GoTo ErroExportarPDF
+    
+    If pSimulacaoA = "" Or pSimulacaoB = "" Then
+        MsgBox "Selecione as duas simulações para exportar.", vbExclamation, "Validação"
+        Exit Sub
+    End If
+    
+    Set resultados = CompararSimulacoes(pSimulacaoA, pSimulacaoB)
+    If resultados.Count = 0 Then
+        MsgBox "Nenhuma diferença encontrada para exportar.", vbExclamation, "Validação"
+        Exit Sub
+    End If
+    
+    Set wb = Workbooks.Add
+    Set ws = wb.Worksheets(1)
+    ws.Name = "Comparação Simulações"
+    
+    ws.PageSetup.Orientation = xlLandscape
+    ws.PageSetup.PaperSize = xlPaperA4
+    ws.PageSetup.Margins.Left = 0.5
+    ws.PageSetup.Margins.Right = 0.5
+    ws.PageSetup.Margins.Top = 0.75
+    ws.PageSetup.Margins.Bottom = 0.75
+    ws.PageSetup.CenterHorizontally = True
+    ws.PageSetup.CenterVertically = False
+    ws.PageSetup.PrintTitleRows = "$1:$16"
+    ws.PageSetup.FitToPagesWide = 1
+    ws.PageSetup.FitToPagesTall = False
+    
+    Call EscreverDadosComparacao(ws, pSimulacaoA, pSimulacaoB, resultados)
+    
+    nomeArquivo = GerarNomeArquivo("APS_PURAN_Comparacao_" & pSimulacaoA & "_vs_" & pSimulacaoB, "pdf")
+    
+    If nomeArquivo <> "" Then
+        ws.ExportAsFixedFormat Type:=xlTypePDF, Filename:=nomeArquivo, _
+                               Quality:=xlQualityStandard, IncludeDocProperties:=True, _
+                               IgnorePrintAreas:=False, OpenAfterPublish:=True
+        wb.Close SaveChanges:=False
+        MsgBox "Comparação PDF gerada com sucesso!" & vbCrLf & nomeArquivo, vbInformation, "APS PURAN"
+    Else
+        wb.Close SaveChanges:=False
+    End If
+    
+Sair:
+    Exit Sub
+    
+ErroExportarPDF:
+    MsgBox "Erro ao gerar PDF da comparação: " & Err.Description, vbCritical, "APS PURAN"
+    If Not wb Is Nothing Then
+        wb.Close SaveChanges:=False
+    End If
+    Resume Sair
+End Sub
+
+'--------------------------------------------------------------------------------
+' SUBROTINA: ImprimirComparacao
+' PROPÓSITO: Imprimir comparação atual
+'--------------------------------------------------------------------------------
+Public Sub ImprimirComparacao(pSimulacaoA As String, pSimulacaoB As String)
+    Dim ws As Worksheet
+    Dim wb As Workbook
+    Dim resultados As Collection
+    
+    On Error GoTo ErroImprimir
+    
+    If pSimulacaoA = "" Or pSimulacaoB = "" Then
+        MsgBox "Selecione as duas simulações para imprimir.", vbExclamation, "Validação"
+        Exit Sub
+    End If
+    
+    Set resultados = CompararSimulacoes(pSimulacaoA, pSimulacaoB)
+    If resultados.Count = 0 Then
+        MsgBox "Nenhuma diferença encontrada para imprimir.", vbExclamation, "Validação"
+        Exit Sub
+    End If
+    
+    Set wb = Workbooks.Add
+    Set ws = wb.Worksheets(1)
+    ws.Name = "Comparação Simulações"
+    
+    ws.PageSetup.Orientation = xlLandscape
+    ws.PageSetup.PaperSize = xlPaperA4
+    ws.PageSetup.Margins.Left = 0.5
+    ws.PageSetup.Margins.Right = 0.5
+    ws.PageSetup.Margins.Top = 0.75
+    ws.PageSetup.Margins.Bottom = 0.75
+    ws.PageSetup.CenterHorizontally = True
+    ws.PageSetup.CenterVertically = False
+    ws.PageSetup.PrintTitleRows = "$1:$16"
+    ws.PageSetup.FitToPagesWide = 1
+    ws.PageSetup.FitToPagesTall = False
+    
+    Call EscreverDadosComparacao(ws, pSimulacaoA, pSimulacaoB, resultados)
+    
+    ws.PrintOut Copies:=1, Collate:=True
+    wb.Close SaveChanges:=False
+    MsgBox "Comparação enviada para impressora.", vbInformation, "APS PURAN"
+    
+Sair:
+    Exit Sub
+    
+ErroImprimir:
+    MsgBox "Erro ao imprimir comparação: " & Err.Description, vbCritical, "APS PURAN"
+    If Not wb Is Nothing Then
+        wb.Close SaveChanges:=False
+    End If
+    Resume Sair
+End Sub
