@@ -1115,7 +1115,7 @@ Private Sub btnEventos_Click()
 End Sub
 
 Private Sub btnConfig_Click()
-    ExibirPainel "Configurações"
+    frmConfiguracoes.Show vbModeless
 End Sub
 
 Private Sub btnCadastros_Click()
