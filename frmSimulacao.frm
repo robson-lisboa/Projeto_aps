@@ -90,6 +90,8 @@ Private Sub UserForm_Initialize()
     m_DataFimPeriodo = DateSerial(Year(Date), Month(Date) + 1, 0)
     m_Zoom = 1.0
     
+    Call CarregarPreferencias
+    
     Call CriarControles
     Call CarregarListaSimulacoes
     
@@ -1201,6 +1203,103 @@ End Sub
 
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
     If CloseMode = vbFormControlMenu Then
+        Call SalvarPreferencias
         Unload Me
     End If
+End Sub
+
+Private Sub UserForm_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
+    On Error Resume Next
+    
+    If KeyCode = vbKeyF5 Then
+        If m_ID_SimulacaoAtiva <> "" Then
+            Call CarregarPlanejamentoSimulacao
+        End If
+        KeyCode = 0
+    ElseIf Shift = vbCtrlMask And KeyCode = vbKeyE Then
+        Call btnExportarSimulacaoExcel_Click
+        KeyCode = 0
+    ElseIf Shift = vbCtrlMask And KeyCode = vbKeyP Then
+        Call btnImprimirSimulacao_Click
+        KeyCode = 0
+    ElseIf KeyCode = vbKeyAdd Or KeyCode = vbKeyOemplus Then
+        m_Zoom = m_Zoom + 0.1
+        If m_Zoom > 3# Then m_Zoom = 3#
+        If m_ID_SimulacaoAtiva <> "" Then
+            Call CarregarPlanejamentoSimulacao
+        End If
+        KeyCode = 0
+    ElseIf KeyCode = vbKeySubtract Or KeyCode = vbKeyOemMinus Then
+        m_Zoom = m_Zoom - 0.1
+        If m_Zoom < 0.5 Then m_Zoom = 0.5
+        If m_ID_SimulacaoAtiva <> "" Then
+            Call CarregarPlanejamentoSimulacao
+        End If
+        KeyCode = 0
+    End If
+End Sub
+
+'================================================================================
+' SUBROTINAS DE PERSISTÊNCIA DE PREFERÊNCIAS
+'================================================================================
+
+Private Sub CarregarPreferencias()
+    On Error Resume Next
+    
+    Dim config As Object
+    Set config = CarregarTodasConfiguracoes
+    
+    If config.Count = 0 Then Exit Sub
+    
+    If config.Exists("SimulacaoDataInicio") Then
+        If IsDate(config("SimulacaoDataInicio")) Then
+            m_DataInicioPeriodo = CDate(config("SimulacaoDataInicio"))
+        End If
+    End If
+    
+    If config.Exists("SimulacaoDataFim") Then
+        If IsDate(config("SimulacaoDataFim")) Then
+            m_DataFimPeriodo = CDate(config("SimulacaoDataFim"))
+        End If
+    End If
+    
+    If config.Exists("SimulacaoZoom") Then
+        Dim z As Double
+        z = CDbl(config("SimulacaoZoom"))
+        If z >= 0.5 And z <= 3# Then m_Zoom = z
+    End If
+    
+    If config.Exists("SimulacaoAtivaID") Then
+        Dim idSalva As String
+        idSalva = CStr(config("SimulacaoAtivaID"))
+        Dim dados As Variant
+        dados = ObterDadosSimulacaoEmArray()
+        If Not IsError(dados) Then
+            Dim i As Long
+            Dim encontrada As Boolean
+            encontrada = False
+            For i = 2 To UBound(dados, 1)
+                If CStr(dados(i, 1)) = idSalva Then
+                    encontrada = True
+                    Exit For
+                End If
+            Next i
+            If encontrada Then m_ID_SimulacaoAtiva = idSalva
+        End If
+    End If
+    
+    On Error GoTo 0
+End Sub
+
+Private Sub SalvarPreferencias()
+    On Error Resume Next
+    
+    Call SalvarConfiguracao("SimulacaoDataInicio", Format(m_DataInicioPeriodo, "yyyy-mm-dd"))
+    Call SalvarConfiguracao("SimulacaoDataFim", Format(m_DataFimPeriodo, "yyyy-mm-dd"))
+    Call SalvarConfiguracao("SimulacaoZoom", CStr(m_Zoom))
+    If m_ID_SimulacaoAtiva <> "" Then
+        Call SalvarConfiguracao("SimulacaoAtivaID", m_ID_SimulacaoAtiva)
+    End If
+    
+    On Error GoTo 0
 End Sub

@@ -81,6 +81,7 @@ Private Sub UserForm_Initialize()
     m_ID_SimulacaoA = ""
     m_ID_SimulacaoB = ""
     
+    Call CarregarPreferencias
     Call CriarControles
     Call CarregarListaSimulacoes
     
@@ -811,6 +812,90 @@ End Sub
 '================================================================================
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
     If CloseMode = vbFormControlMenu Then
+        Call SalvarPreferencias
         Unload Me
     End If
+End Sub
+
+Private Sub UserForm_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
+    On Error Resume Next
+    
+    If KeyCode = vbKeyF5 Then
+        If m_ID_SimulacaoA <> "" And m_ID_SimulacaoB <> "" Then
+            Call ExecutarComparacao
+        End If
+        KeyCode = 0
+    ElseIf Shift = vbCtrlMask And KeyCode = vbKeyE Then
+        Call btnExportarComparacaoExcel_Click
+        KeyCode = 0
+    ElseIf Shift = vbCtrlMask And KeyCode = vbKeyP Then
+        Call btnImprimirComparacao_Click
+        KeyCode = 0
+    End If
+End Sub
+
+'================================================================================
+' SUBROTINAS DE PERSISTÊNCIA DE PREFERÊNCIAS
+'================================================================================
+
+Private Sub CarregarPreferencias()
+    On Error Resume Next
+    
+    Dim config As Object
+    Set config = CarregarTodasConfiguracoes
+    
+    If config.Count = 0 Then Exit Sub
+    
+    If config.Exists("ComparacaoSimA") Then
+        Dim idA As String
+        idA = CStr(config("ComparacaoSimA"))
+        Dim dados As Variant
+        dados = ObterDadosSimulacaoEmArray()
+        If Not IsError(dados) Then
+            Dim i As Long
+            Dim encontradaA As Boolean
+            encontradaA = False
+            For i = 2 To UBound(dados, 1)
+                If CStr(dados(i, 1)) = idA Then
+                    encontradaA = True
+                    Exit For
+                End If
+            Next i
+            If encontradaA Then m_ID_SimulacaoA = idA
+        End If
+    End If
+    
+    If config.Exists("ComparacaoSimB") Then
+        Dim idB As String
+        idB = CStr(config("ComparacaoSimB"))
+        Dim dadosB As Variant
+        dadosB = ObterDadosSimulacaoEmArray()
+        If Not IsError(dadosB) Then
+            Dim j As Long
+            Dim encontradaB As Boolean
+            encontradaB = False
+            For j = 2 To UBound(dadosB, 1)
+                If CStr(dadosB(j, 1)) = idB Then
+                    encontradaB = True
+                    Exit For
+                End If
+            Next j
+            If encontradaB Then m_ID_SimulacaoB = idB
+        End If
+    End If
+    
+    On Error GoTo 0
+End Sub
+
+Private Sub SalvarPreferencias()
+    On Error Resume Next
+    
+    If m_ID_SimulacaoA <> "" Then
+        Call SalvarConfiguracao("ComparacaoSimA", m_ID_SimulacaoA)
+    End If
+    If m_ID_SimulacaoB <> "" Then
+        Call SalvarConfiguracao("ComparacaoSimB", m_ID_SimulacaoB)
+    End If
+    
+    On Error GoTo 0
 End Sub

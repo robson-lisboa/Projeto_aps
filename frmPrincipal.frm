@@ -204,6 +204,9 @@ Private Sub UserForm_Initialize()
     m_PainelAtivo = ""
     m_DadosKPIs = Empty
     
+    '--- Carrega preferências salvas -------------------------------------------
+    Call CarregarPreferencias
+    
     ' Inicializar período padrão (mês atual)
     m_DataInicioPeriodo = DateSerial(Year(Date), Month(Date), 1)
     m_DataFimPeriodo = DateSerial(Year(Date), Month(Date) + 1, 0)
@@ -1383,11 +1386,79 @@ Private Sub hScrollProducao_Change()
 End Sub
 
 '================================================================================
+' SUBROTINAS DE PERSISTÊNCIA DE PREFERÊNCIAS
+'================================================================================
+
+Private Sub CarregarPreferencias()
+    On Error Resume Next
+    
+    Dim config As Object
+    Set config = CarregarTodasConfiguracoes
+    
+    If config.Count = 0 Then Exit Sub
+    
+    ' Período
+    If config.Exists("DataInicioPlanejamento") Then
+        If IsDate(config("DataInicioPlanejamento")) Then
+            m_DataInicioPeriodo = CDate(config("DataInicioPlanejamento"))
+        End If
+    End If
+    
+    If config.Exists("DataFimPlanejamento") Then
+        If IsDate(config("DataFimPlanejamento")) Then
+            m_DataFimPeriodo = CDate(config("DataFimPlanejamento"))
+        End If
+    End If
+    
+    ' Zoom
+    If config.Exists("ZoomPlanejamento") Then
+        Dim z As Double
+        z = CDbl(config("ZoomPlanejamento"))
+        If z >= 0.5 And z <= 3# Then m_Zoom = z
+    End If
+    
+    ' Filtros
+    If config.Exists("FiltroStatusPlanejamento") Then
+        m_FiltroStatus = CStr(config("FiltroStatusPlanejamento"))
+    End If
+    
+    If config.Exists("TextoBuscaPlanejamento") Then
+        m_TextoBusca = CStr(config("TextoBuscaPlanejamento"))
+    End If
+    
+    If config.Exists("OrdenarPorPlanejamento") Then
+        m_OrdenarPor = CStr(config("OrdenarPorPlanejamento"))
+    End If
+    
+    ' Painel ativo
+    If config.Exists("UltimoPainelPrincipal") Then
+        m_PainelAtivo = CStr(config("UltimoPainelPrincipal"))
+    End If
+    
+    On Error GoTo 0
+End Sub
+
+Private Sub SalvarPreferencias()
+    On Error Resume Next
+    
+    Call SalvarConfiguracao("DataInicioPlanejamento", Format(m_DataInicioPeriodo, "yyyy-mm-dd"))
+    Call SalvarConfiguracao("DataFimPlanejamento", Format(m_DataFimPeriodo, "yyyy-mm-dd"))
+    Call SalvarConfiguracao("ZoomPlanejamento", CStr(m_Zoom))
+    Call SalvarConfiguracao("FiltroStatusPlanejamento", m_FiltroStatus)
+    Call SalvarConfiguracao("TextoBuscaPlanejamento", m_TextoBusca)
+    Call SalvarConfiguracao("OrdenarPorPlanejamento", m_OrdenarPor)
+    Call SalvarConfiguracao("UltimoPainelPrincipal", m_PainelAtivo)
+    
+    On Error GoTo 0
+End Sub
+
+'================================================================================
 ' EVENTO: UserForm_QueryClose
 ' PROPÓSITO: Confirmação de saída segura e restauração do Excel
 '================================================================================
 Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
     If CloseMode = vbFormControlMenu Then
+        Call SalvarPreferencias
         Dim resposta As VbMsgBoxResult
         resposta = MsgBox("Deseja realmente sair do APS PURAN?", _
                           vbQuestion + vbYesNo, "Confirmação de Saída")
@@ -1396,6 +1467,66 @@ Private Sub UserForm_QueryClose(Cancel As Integer, CloseMode As Integer)
         Else
             Application.Visible = True
         End If
+    End If
+End Sub
+
+Private Sub UserForm_KeyDown(ByVal KeyCode As MSForms.ReturnInteger, ByVal Shift As Integer)
+    On Error Resume Next
+    
+    If KeyCode = vbKeyF5 Then
+        If m_PainelAtivo = "Planejamento" Then
+            Call CarregarPlanejamento
+        ElseIf m_PainelAtivo = "Dashboard" Then
+            Call CarregarDashboard
+        End If
+        KeyCode = 0
+    ElseIf Shift = vbCtrlMask And KeyCode = vbKeyF Then
+        If m_PainelAtivo = "Planejamento" Then
+            If Not txtBusca Is Nothing Then txtBusca.SetFocus
+        End If
+        KeyCode = 0
+    ElseIf Shift = vbCtrlMask And KeyCode = vbKeyN Then
+        If m_PainelAtivo = "Planejamento" Then
+            Call cmdAdicionarOP_Click
+        End If
+        KeyCode = 0
+    ElseIf Shift = vbCtrlMask And KeyCode = vbKeyE Then
+        If m_PainelAtivo = "Planejamento" Then
+            Call cmdExportarPlanejamentoExcel_Click
+        End If
+        KeyCode = 0
+    ElseIf Shift = vbCtrlMask And KeyCode = vbKeyP Then
+        If m_PainelAtivo = "Planejamento" Then
+            Call cmdImprimirPlanejamento_Click
+        End If
+        KeyCode = 0
+    ElseIf KeyCode = vbKeyEscape Then
+        If m_PainelAtivo = "Planejamento" Then
+            m_FiltroStatus = "Todos"
+            m_TextoBusca = ""
+            m_OrdenarPor = ""
+            If Not cboFiltroStatus Is Nothing Then cboFiltroStatus.Value = "Todos"
+            If Not txtBusca Is Nothing Then txtBusca.Text = ""
+            If Not cboOrdenar Is Nothing Then cboOrdenar.Value = "Ordenar por..."
+            Call CarregarPlanejamento
+        End If
+        KeyCode = 0
+    ElseIf KeyCode = vbKeyAdd Or KeyCode = vbKeyOemplus Then
+        If m_PainelAtivo = "Planejamento" Then
+            m_Zoom = m_Zoom + 0.1
+            If m_Zoom > 3# Then m_Zoom = 3#
+            lblZoom.Caption = Format(m_Zoom, "0%")
+            Call CarregarPlanejamento
+        End If
+        KeyCode = 0
+    ElseIf KeyCode = vbKeySubtract Or KeyCode = vbKeyOemMinus Then
+        If m_PainelAtivo = "Planejamento" Then
+            m_Zoom = m_Zoom - 0.1
+            If m_Zoom < 0.5 Then m_Zoom = 0.5
+            lblZoom.Caption = Format(m_Zoom, "0%")
+            Call CarregarPlanejamento
+        End If
+        KeyCode = 0
     End If
 End Sub
 

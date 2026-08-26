@@ -51,6 +51,7 @@ Public Sub CriarEstruturasDeDados()
     If Not PlanilhaExiste("BD_Config") Then
         Set ws = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
         ws.Name = "BD_Config"
+        CriarTabela ws, "TabelaConfig", Array("Chave", "Valor")
         ws.Visible = xlSheetVeryHidden
     End If
     
