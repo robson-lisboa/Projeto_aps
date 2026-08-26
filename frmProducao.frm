@@ -684,7 +684,6 @@ Private Sub PreencherCamposProducao(pID_Producao As String)
         If CStr(dados(i, 1)) = pID_Producao Then
             txtID_Producao.Text = CStr(dados(i, 1))
             txtID_OP.Text = CStr(dados(i, 2))
-            txtProduto.Text = ""
             txtEquipamento.Text = CStr(dados(i, 4))
             txtOperador.Text = CStr(dados(i, 3))
             txtQtdPlanejada.Text = CStr(dados(i, 7))
@@ -695,6 +694,15 @@ Private Sub PreencherCamposProducao(pID_Producao As String)
             cboStatus.Value = CStr(dados(i, 10))
             lblStatus.Caption = CStr(dados(i, 10))
             m_ID_ProducaoAtiva = pID_Producao
+            
+            Dim dadosOP As Variant
+            dadosOP = BuscarOPPorID(CStr(dados(i, 2)))
+            If Not IsEmpty(dadosOP) Then
+                txtProduto.Text = CStr(dadosOP(1))
+            Else
+                txtProduto.Text = ""
+            End If
+            
             Exit For
         End If
     Next i

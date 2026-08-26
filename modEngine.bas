@@ -1051,6 +1051,8 @@ Public Sub IniciarProducao(pID_Producao As String, pID_OP As String, pID_Operado
                            pEquipamento As String, pQtdPlanejada As Long)
     Dim ws As Worksheet
     Dim tbl As ListObject
+    Dim dados As Variant
+    Dim i As Long, totalLinhas As Long
     Dim novaLinha As ListRow
     
     On Error GoTo ErroIniciar
@@ -1067,6 +1069,15 @@ Public Sub IniciarProducao(pID_Producao As String, pID_OP As String, pID_Operado
     Set tbl = ws.ListObjects("TabelaProducoes")
     
     Application.ScreenUpdating = False
+    
+    dados = tbl.Range.Value
+    totalLinhas = UBound(dados, 1)
+    
+    For i = 2 To totalLinhas
+        If Trim(CStr(dados(i, 2))) = Trim(pID_OP) And Trim(CStr(dados(i, 10))) = "EM PRODUÇÃO" Then
+            Err.Raise vbObjectError + 421, "IniciarProducao", "Já existe uma produção em andamento para esta OP."
+        End If
+    Next i
     
     Set novaLinha = tbl.ListRows.Add
     
@@ -1215,6 +1226,10 @@ Public Sub FinalizarProducao(pID_Producao As String, pQtdProduzida As Long, pQtd
     
     If pQtdProduzida < 0 Or pQtdRejeitada < 0 Then
         Err.Raise vbObjectError + 409, "FinalizarProducao", "Quantidades não podem ser negativas."
+    End If
+    
+    If pQtdRejeitada > pQtdProduzida Then
+        Err.Raise vbObjectError + 422, "FinalizarProducao", "Quantidade rejeitada não pode ser maior que a quantidade produzida."
     End If
     
     Set ws = ThisWorkbook.Worksheets("BD_Producoes")
