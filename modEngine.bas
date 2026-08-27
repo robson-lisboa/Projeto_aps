@@ -943,7 +943,7 @@ Sair:
 ErroIndicadores:
     ObterIndicadoresSimulacao = Array(0, 0, 0, 0, 0, 0, 0)
     Resume Sair
-End Sub
+End Function
 
 '--------------------------------------------------------------------------------
 ' FUNÇÃO: BuscarOPPorID
