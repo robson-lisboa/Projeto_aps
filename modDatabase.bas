@@ -26,8 +26,14 @@ Public Sub CriarEstruturasDeDados()
         ws.Name = "BD_OPs"
         CriarTabela ws, "TabelaOPs", Array("ID_OP", "Produto", "Equipamento", _
             "Quantidade", "Data_Inicio", "Data_Fim", "Duracao_Horas", "Status")
-        ws.Visible = xlSheetVeryHidden
+    Else
+        Set ws = wb.Worksheets("BD_OPs")
+        If Not TabelaExisteEstaPlanilha(ws, "TabelaOPs") Then
+            CriarTabela ws, "TabelaOPs", Array("ID_OP", "Produto", "Equipamento", _
+                "Quantidade", "Data_Inicio", "Data_Fim", "Duracao_Horas", "Status")
+        End If
     End If
+    ws.Visible = xlSheetVeryHidden
     
     '--- BD_Equipamentos ---------------------------------------------------------
     If Not PlanilhaExiste("BD_Equipamentos") Then
@@ -35,8 +41,14 @@ Public Sub CriarEstruturasDeDados()
         ws.Name = "BD_Equipamentos"
         CriarTabela ws, "TabelaEquipamentos", Array("ID_Equipamento", "Nome", _
             "Capacidade_Hora", "Status_Manutencao")
-        ws.Visible = xlSheetVeryHidden
+    Else
+        Set ws = wb.Worksheets("BD_Equipamentos")
+        If Not TabelaExisteEstaPlanilha(ws, "TabelaEquipamentos") Then
+            CriarTabela ws, "TabelaEquipamentos", Array("ID_Equipamento", "Nome", _
+                "Capacidade_Hora", "Status_Manutencao")
+        End If
     End If
+    ws.Visible = xlSheetVeryHidden
     
     '--- BD_Eventos --------------------------------------------------------------
     If Not PlanilhaExiste("BD_Eventos") Then
@@ -44,56 +56,92 @@ Public Sub CriarEstruturasDeDados()
         ws.Name = "BD_Eventos"
         CriarTabela ws, "TabelaEventos", Array("ID_Evento", "Tipo", "Equipamento", _
             "Inicio", "Fim", "Motivo")
-        ws.Visible = xlSheetVeryHidden
+    Else
+        Set ws = wb.Worksheets("BD_Eventos")
+        If Not TabelaExisteEstaPlanilha(ws, "TabelaEventos") Then
+            CriarTabela ws, "TabelaEventos", Array("ID_Evento", "Tipo", "Equipamento", _
+                "Inicio", "Fim", "Motivo")
+        End If
     End If
+    ws.Visible = xlSheetVeryHidden
     
     '--- BD_Config ---------------------------------------------------------------
     If Not PlanilhaExiste("BD_Config") Then
         Set ws = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
         ws.Name = "BD_Config"
         CriarTabela ws, "TabelaConfig", Array("Chave", "Valor")
-        ws.Visible = xlSheetVeryHidden
+    Else
+        Set ws = wb.Worksheets("BD_Config")
+        If Not TabelaExisteEstaPlanilha(ws, "TabelaConfig") Then
+            CriarTabela ws, "TabelaConfig", Array("Chave", "Valor")
+        End If
     End If
+    ws.Visible = xlSheetVeryHidden
     
     '--- BD_Produtos -------------------------------------------------------------
     If Not PlanilhaExiste("BD_Produtos") Then
         Set ws = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
         ws.Name = "BD_Produtos"
         CriarTabela ws, "TabelaProdutos", Array("ID_Produto", "Nome", "Descricao", "Tempo_Padrao_Horas", "Status")
-        ws.Visible = xlSheetVeryHidden
+    Else
+        Set ws = wb.Worksheets("BD_Produtos")
+        If Not TabelaExisteEstaPlanilha(ws, "TabelaProdutos") Then
+            CriarTabela ws, "TabelaProdutos", Array("ID_Produto", "Nome", "Descricao", "Tempo_Padrao_Horas", "Status")
+        End If
     End If
+    ws.Visible = xlSheetVeryHidden
     
     '--- BD_Operadores -----------------------------------------------------------
     If Not PlanilhaExiste("BD_Operadores") Then
         Set ws = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
         ws.Name = "BD_Operadores"
         CriarTabela ws, "TabelaOperadores", Array("ID_Operador", "Nome", "Status")
-        ws.Visible = xlSheetVeryHidden
+    Else
+        Set ws = wb.Worksheets("BD_Operadores")
+        If Not TabelaExisteEstaPlanilha(ws, "TabelaOperadores") Then
+            CriarTabela ws, "TabelaOperadores", Array("ID_Operador", "Nome", "Status")
+        End If
     End If
+    ws.Visible = xlSheetVeryHidden
     
     '--- BD_Turnos ---------------------------------------------------------------
     If Not PlanilhaExiste("BD_Turnos") Then
         Set ws = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
         ws.Name = "BD_Turnos"
         CriarTabela ws, "TabelaTurnos", Array("ID_Turno", "Nome", "Hora_Inicio", "Hora_Fim", "Dias_Funcionamento")
-        ws.Visible = xlSheetVeryHidden
+    Else
+        Set ws = wb.Worksheets("BD_Turnos")
+        If Not TabelaExisteEstaPlanilha(ws, "TabelaTurnos") Then
+            CriarTabela ws, "TabelaTurnos", Array("ID_Turno", "Nome", "Hora_Inicio", "Hora_Fim", "Dias_Funcionamento")
+        End If
     End If
+    ws.Visible = xlSheetVeryHidden
     
     '--- BD_Processos ------------------------------------------------------------
     If Not PlanilhaExiste("BD_Processos") Then
         Set ws = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
         ws.Name = "BD_Processos"
         CriarTabela ws, "TabelaProcessos", Array("ID_Processo", "Produto", "Posto", "Sequencia", "Tempo_Padrao_Horas")
-        ws.Visible = xlSheetVeryHidden
+    Else
+        Set ws = wb.Worksheets("BD_Processos")
+        If Not TabelaExisteEstaPlanilha(ws, "TabelaProcessos") Then
+            CriarTabela ws, "TabelaProcessos", Array("ID_Processo", "Produto", "Posto", "Sequencia", "Tempo_Padrao_Horas")
+        End If
     End If
+    ws.Visible = xlSheetVeryHidden
     
     '--- BD_MotivosParada --------------------------------------------------------
     If Not PlanilhaExiste("BD_MotivosParada") Then
         Set ws = wb.Worksheets.Add(After:=wb.Worksheets(wb.Worksheets.Count))
         ws.Name = "BD_MotivosParada"
         CriarTabela ws, "TabelaMotivosParada", Array("ID_Motivo", "Descricao", "Categoria", "Status")
-        ws.Visible = xlSheetVeryHidden
+    Else
+        Set ws = wb.Worksheets("BD_MotivosParada")
+        If Not TabelaExisteEstaPlanilha(ws, "TabelaMotivosParada") Then
+            CriarTabela ws, "TabelaMotivosParada", Array("ID_Motivo", "Descricao", "Categoria", "Status")
+        End If
     End If
+    ws.Visible = xlSheetVeryHidden
     
     '--- BD_Simulacoes -----------------------------------------------------------
     If Not PlanilhaExiste("BD_Simulacoes") Then
@@ -101,8 +149,14 @@ Public Sub CriarEstruturasDeDados()
         ws.Name = "BD_Simulacoes"
         CriarTabela ws, "TabelaSimulacoes", Array("ID_Simulacao", "Nome_Simulacao", "Data_Criacao", _
             "Data_Inicio", "Data_Fim", "Status", "Observacao")
-        ws.Visible = xlSheetVeryHidden
+    Else
+        Set ws = wb.Worksheets("BD_Simulacoes")
+        If Not TabelaExisteEstaPlanilha(ws, "TabelaSimulacoes") Then
+            CriarTabela ws, "TabelaSimulacoes", Array("ID_Simulacao", "Nome_Simulacao", "Data_Criacao", _
+                "Data_Inicio", "Data_Fim", "Status", "Observacao")
+        End If
     End If
+    ws.Visible = xlSheetVeryHidden
     
     '--- BD_OPsSimulacao ---------------------------------------------------------
     If Not PlanilhaExiste("BD_OPsSimulacao") Then
@@ -111,8 +165,15 @@ Public Sub CriarEstruturasDeDados()
         CriarTabela ws, "TabelaOPsSimulacao", Array("ID_Simulacao", "ID_OP_Simulacao", "ID_OP_Origem", _
             "Produto", "Equipamento", "Quantidade", "Data_Inicio", "Data_Fim", "Duracao_Horas", _
             "Status", "Prioridade", "Observacao")
-        ws.Visible = xlSheetVeryHidden
+    Else
+        Set ws = wb.Worksheets("BD_OPsSimulacao")
+        If Not TabelaExisteEstaPlanilha(ws, "TabelaOPsSimulacao") Then
+            CriarTabela ws, "TabelaOPsSimulacao", Array("ID_Simulacao", "ID_OP_Simulacao", "ID_OP_Origem", _
+                "Produto", "Equipamento", "Quantidade", "Data_Inicio", "Data_Fim", "Duracao_Horas", _
+                "Status", "Prioridade", "Observacao")
+        End If
     End If
+    ws.Visible = xlSheetVeryHidden
     
     '--- BD_Producoes ------------------------------------------------------------
     If Not PlanilhaExiste("BD_Producoes") Then
@@ -121,8 +182,15 @@ Public Sub CriarEstruturasDeDados()
         CriarTabela ws, "TabelaProducoes", Array("ID_Producao", "ID_OP", "ID_Operador", _
             "Equipamento", "Data_Inicio", "Data_Fim", "Quantidade_Planejada", _
             "Quantidade_Produzida", "Quantidade_Rejeitada", "Status")
-        ws.Visible = xlSheetVeryHidden
+    Else
+        Set ws = wb.Worksheets("BD_Producoes")
+        If Not TabelaExisteEstaPlanilha(ws, "TabelaProducoes") Then
+            CriarTabela ws, "TabelaProducoes", Array("ID_Producao", "ID_OP", "ID_Operador", _
+                "Equipamento", "Data_Inicio", "Data_Fim", "Quantidade_Planejada", _
+                "Quantidade_Produzida", "Quantidade_Rejeitada", "Status")
+        End If
     End If
+    ws.Visible = xlSheetVeryHidden
     
     '--- BD_Paradas --------------------------------------------------------------
     If Not PlanilhaExiste("BD_Paradas") Then
@@ -130,8 +198,14 @@ Public Sub CriarEstruturasDeDados()
         ws.Name = "BD_Paradas"
         CriarTabela ws, "TabelaParadas", Array("ID_Parada", "ID_OP", "Equipamento", _
             "ID_Operador", "Data_Inicio", "Data_Fim", "ID_Motivo", "Observacao", "Duracao_Minutos")
-        ws.Visible = xlSheetVeryHidden
+    Else
+        Set ws = wb.Worksheets("BD_Paradas")
+        If Not TabelaExisteEstaPlanilha(ws, "TabelaParadas") Then
+            CriarTabela ws, "TabelaParadas", Array("ID_Parada", "ID_OP", "Equipamento", _
+                "ID_Operador", "Data_Inicio", "Data_Fim", "ID_Motivo", "Observacao", "Duracao_Minutos")
+        End If
     End If
+    ws.Visible = xlSheetVeryHidden
     
 Sair:
     Application.ScreenUpdating = True
@@ -152,6 +226,18 @@ Private Function PlanilhaExiste(pNome As String) As Boolean
     On Error Resume Next
     Set ws = ThisWorkbook.Worksheets(pNome)
     PlanilhaExiste = Not ws Is Nothing
+    On Error GoTo 0
+End Function
+
+'--------------------------------------------------------------------------------
+' FUNÇÃO: TabelaExisteEstaPlanilha
+' PROPÓSITO: Verificar se uma ListObject com o nome informado existe na planilha
+'--------------------------------------------------------------------------------
+Private Function TabelaExisteEstaPlanilha(pWorksheet As Worksheet, pNomeTabela As String) As Boolean
+    Dim tbl As ListObject
+    On Error Resume Next
+    Set tbl = pWorksheet.ListObjects(pNomeTabela)
+    TabelaExisteEstaPlanilha = Not tbl Is Nothing
     On Error GoTo 0
 End Function
 
