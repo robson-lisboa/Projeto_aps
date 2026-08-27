@@ -68,7 +68,7 @@ Private Sub AplicarEstiloRedimensionavel()
     Dim estilo As LongPtr
     
     #If VBA7 Then
-        hWnd = Me.hWnd
+        hWnd = GetActiveWindow()
     #Else
         hWnd = GetActiveWindow()
     #End If
@@ -1200,7 +1200,7 @@ Private Sub btnMinimizar_Click()
     On Error Resume Next
     Dim hWnd As LongPtr
     #If VBA7 Then
-        hWnd = Me.hWnd
+        hWnd = GetActiveWindow()
     #Else
         hWnd = GetActiveWindow()
     #End If
@@ -1213,7 +1213,7 @@ Private Sub btnMaximizar_Click()
     On Error Resume Next
     Dim hWnd As LongPtr
     #If VBA7 Then
-        hWnd = Me.hWnd
+        hWnd = GetActiveWindow()
     #Else
         hWnd = GetActiveWindow()
     #End If
