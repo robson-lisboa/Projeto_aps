@@ -556,7 +556,6 @@ Private Sub RenderizarKPIs(pDashboard As clsDashboardProducao)
     
     Dim kpis As Variant
     Dim valores As Variant
-    Dim rotulos As Variant
     
     kpis = Array("Total Produções", "Em Produção", "Pausadas", "Finalizadas", _
                  "Planejada", "Produzida", "Rejeitada", "% Produzido", _
@@ -774,7 +773,18 @@ Private Sub RenderizarParadas(pDashboard As clsDashboardProducao)
         .BackColor = COR_FUNDO
     End With
     
-    topPos = topPos + 25
+    ' Barra de progresso do tempo parado
+    Dim tempoDisponivelParadas As Double
+    tempoDisponivelParadas = (pDashboard.FiltroPeriodoFim - pDashboard.FiltroPeriodoInicio) * 24
+    Dim percentualParada As Double
+    If tempoDisponivelParadas > 0 Then
+        percentualParada = (pDashboard.HorasParada / tempoDisponivelParadas) * 100
+    Else
+        percentualParada = 0
+    End If
+    Call DesenharBarraProgresso(fraParadas, topPos + 22, percentualParada, 820, 12, 12632256, COR_ALERTA)
+    
+    topPos = topPos + 45
     
     Dim chave As Variant
     For Each chave In pDashboard.MotivosParada.Keys
@@ -935,6 +945,9 @@ Private Sub RenderizarMetaRealizado(pDashboard As clsDashboardProducao)
         .ForeColor = IIf(pDashboard.PercentualAtingido >= 100, COR_VERDE, COR_AMARELO)
         .BackColor = COR_FUNDO
     End With
+    
+    ' Barra de progresso do % atingido
+    Call DesenharBarraProgresso(fraMetaRealizado, topPos + 90, pDashboard.PercentualAtingido, 390, 14, 12632256, IIf(pDashboard.PercentualAtingido >= 100, COR_VERDE, COR_AMARELO))
 End Sub
 
 Private Sub RenderizarEficienciaOEE(pDashboard As clsDashboardProducao)
@@ -976,6 +989,9 @@ Private Sub RenderizarEficienciaOEE(pDashboard As clsDashboardProducao)
         .ForeColor = IIf(pDashboard.EficienciaProducao >= 100, COR_VERDE, COR_AMARELO)
         .BackColor = COR_FUNDO
     End With
+    
+    ' Barra de progresso da Eficiência
+    Call DesenharBarraProgresso(fraEficienciaOEE, topPos + 38, pDashboard.EficienciaProducao, 190, 10, 12632256, IIf(pDashboard.EficienciaProducao >= 100, COR_VERDE, COR_AMARELO))
     
     ' Qtd/Hora
     Dim lblQtdHora As MSForms.Label
@@ -1035,6 +1051,9 @@ Private Sub RenderizarEficienciaOEE(pDashboard As clsDashboardProducao)
         .BackColor = COR_FUNDO
     End With
     
+    ' Barra de progresso da Disponibilidade
+    Call DesenharBarraProgresso(fraEficienciaOEE, topPos + 83, pDashboard.Disponibilidade, 190, 10, 12632256, IIf(pDashboard.Disponibilidade >= 80, COR_VERDE, COR_AMARELO))
+    
     ' OEE
     Dim lblOEE As MSForms.Label
     Set lblOEE = fraEficienciaOEE.Controls.Add("Forms.Label.1", "lblOEE", True)
@@ -1063,6 +1082,9 @@ Private Sub RenderizarEficienciaOEE(pDashboard As clsDashboardProducao)
         .ForeColor = IIf(pDashboard.OEE >= 85, COR_VERDE, COR_AMARELO)
         .BackColor = COR_FUNDO
     End With
+    
+    ' Barra de progresso do OEE
+    Call DesenharBarraProgresso(fraEficienciaOEE, topPos + 83, pDashboard.OEE, 190, 10, 12632256, IIf(pDashboard.OEE >= 85, COR_VERDE, COR_AMARELO))
     
     ' Aviso Performance
     If Not pDashboard.PerformanceDisponivel Then
@@ -1125,6 +1147,52 @@ Private Sub RenderizarAlertas(pDashboard As clsDashboardProducao)
         
         topPos = topPos + 20
     Next chave
+End Sub
+
+'================================================================================
+' FUNÇÃO PRIVADA: DesenharBarraProgresso
+' PROPÓSITO: Desenhar uma barra de progresso visual usando Labels MSForms
+'================================================================================
+Private Sub DesenharBarraProgresso(pContainer As MSForms.Frame, _
+                                   pTop As Single, _
+                                   pPercentual As Double, _
+                                   Optional pLargura As Single = 180, _
+                                   Optional pAltura As Single = 14, _
+                                   Optional pCorFundo As Long = 14211288, _
+                                   Optional pCorBarra As Long = 5287936)
+    On Error Resume Next
+    
+    Dim larguraBarra As Single
+    If pPercentual < 0 Then
+        larguraBarra = 0
+    ElseIf pPercentual > 100 Then
+        larguraBarra = pLargura
+    Else
+        larguraBarra = (pPercentual / 100) * pLargura
+    End If
+    
+    Dim lblFundo As MSForms.Label
+    Set lblFundo = pContainer.Controls.Add("Forms.Label.1", "lblBarraFundo_" & Format(Now, "SSSSS") & "_" & CStr(Int(Rnd * 100000)), True)
+    With lblFundo
+        .Left = 20
+        .Top = pTop
+        .Width = pLargura
+        .Height = pAltura
+        .BackColor = pCorFundo
+        .BorderStyle = fmBorderStyleSingle
+    End With
+    
+    If larguraBarra > 0 Then
+        Dim lblBarra As MSForms.Label
+        Set lblBarra = pContainer.Controls.Add("Forms.Label.1", "lblBarra_" & Format(Now, "SSSSS") & "_" & CStr(Int(Rnd * 100000)), True)
+        With lblBarra
+            .Left = 20
+            .Top = pTop
+            .Width = larguraBarra
+            .Height = pAltura
+            .BackColor = pCorBarra
+        End With
+    End If
 End Sub
 
 '================================================================================
