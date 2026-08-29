@@ -19,8 +19,25 @@ Public Function ObterDadosOPsEmArray() As Variant
     
     On Error GoTo ErroObterDados
     
+    Set ws = Nothing
+    On Error Resume Next
     Set ws = ThisWorkbook.Worksheets("BD_OPs")
+    On Error GoTo 0
+    
+    If ws Is Nothing Then
+        ObterDadosOPsEmArray = CVErr(xlErrRef)
+        Exit Function
+    End If
+    
+    Set tbl = Nothing
+    On Error Resume Next
     Set tbl = ws.ListObjects("TabelaOPs")
+    On Error GoTo 0
+    
+    If tbl Is Nothing Then
+        ObterDadosOPsEmArray = CVErr(xlErrRef)
+        Exit Function
+    End If
     
     dados = tbl.Range.Value
     
@@ -64,8 +81,25 @@ Public Sub SalvarNovaOP(pID As String, _
             "A Data de Fim não pode ser anterior à Data de Início."
     End If
     
+    Set ws = Nothing
+    On Error Resume Next
     Set ws = ThisWorkbook.Worksheets("BD_OPs")
+    On Error GoTo 0
+    
+    If ws Is Nothing Then
+        Err.Raise vbObjectError + 102, "SalvarNovaOP", _
+            "Planilha BD_OPs não encontrada."
+    End If
+    
+    Set tbl = Nothing
+    On Error Resume Next
     Set tbl = ws.ListObjects("TabelaOPs")
+    On Error GoTo 0
+    
+    If tbl Is Nothing Then
+        Err.Raise vbObjectError + 103, "SalvarNovaOP", _
+            "Tabela TabelaOPs não encontrada."
+    End If
     
     Application.ScreenUpdating = False
     
@@ -123,8 +157,25 @@ Public Sub AtualizarOP(pID As String, _
         Err.Raise vbObjectError + 103, "AtualizarOP", "A Data de Fim não pode ser anterior à Data de Início."
     End If
     
+    Set ws = Nothing
+    On Error Resume Next
     Set ws = ThisWorkbook.Worksheets("BD_OPs")
+    On Error GoTo 0
+    
+    If ws Is Nothing Then
+        Err.Raise vbObjectError + 104, "AtualizarOP", _
+            "Planilha BD_OPs não encontrada."
+    End If
+    
+    Set tbl = Nothing
+    On Error Resume Next
     Set tbl = ws.ListObjects("TabelaOPs")
+    On Error GoTo 0
+    
+    If tbl Is Nothing Then
+        Err.Raise vbObjectError + 105, "AtualizarOP", _
+            "Tabela TabelaOPs não encontrada."
+    End If
     
     Application.ScreenUpdating = False
     
@@ -133,7 +184,7 @@ Public Sub AtualizarOP(pID As String, _
     linhaEncontrada = 0
     
     For i = 2 To totalLinhas
-        If Trim(CStr(dados(i, 1))) = Trim(pID) Then
+        If StrComp(Trim$(CStr(dados(i, 1))), Trim$(CStr(pID)), vbTextCompare) = 0 Then
             linhaEncontrada = i
             Exit For
         End If
@@ -964,14 +1015,31 @@ Public Function BuscarOPPorID(pID_OP As String) As Variant
         Exit Function
     End If
     
+    Set ws = Nothing
+    On Error Resume Next
     Set ws = ThisWorkbook.Worksheets("BD_OPs")
+    On Error GoTo 0
+    
+    If ws Is Nothing Then
+        BuscarOPPorID = Empty
+        Exit Function
+    End If
+    
+    Set tbl = Nothing
+    On Error Resume Next
     Set tbl = ws.ListObjects("TabelaOPs")
+    On Error GoTo 0
+    
+    If tbl Is Nothing Then
+        BuscarOPPorID = Empty
+        Exit Function
+    End If
     
     dados = tbl.Range.Value
     totalLinhas = UBound(dados, 1)
     
     For i = 2 To totalLinhas
-        If Trim(CStr(dados(i, 1))) = Trim(pID_OP) Then
+        If StrComp(Trim$(CStr(dados(i, 1))), Trim$(CStr(pID_OP)), vbTextCompare) = 0 Then
             BuscarOPPorID = Array(dados(i, 1), dados(i, 2), dados(i, 3), dados(i, 4), dados(i, 5), dados(i, 6))
             Exit Function
         End If

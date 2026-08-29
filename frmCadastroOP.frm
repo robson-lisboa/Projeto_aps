@@ -207,13 +207,24 @@ Public Sub CarregarParaEdicao(pID_OP As String)
     totalLinhas = UBound(dados, 1)
     
     For i = 2 To totalLinhas
-        If CStr(dados(i, 1)) = pID_OP Then
+        If StrComp(Trim$(CStr(dados(i, 1))), Trim$(CStr(pID_OP)), vbTextCompare) = 0 Then
             Me.Controls("txtID_OP").Value = CStr(dados(i, 1))
             Me.Controls("txtProduto").Value = CStr(dados(i, 2))
             Me.Controls("cboEquipamento").Value = CStr(dados(i, 3))
             Me.Controls("txtQuantidade").Value = CStr(dados(i, 4))
-            Me.Controls("txtData_Inicio").Value = Format(CDate(dados(i, 5)), "dd/mm/yyyy")
-            Me.Controls("txtData_Fim").Value = Format(CDate(dados(i, 6)), "dd/mm/yyyy")
+            
+            If IsDate(dados(i, 5)) Then
+                Me.Controls("txtData_Inicio").Value = Format(CDate(dados(i, 5)), "dd/mm/yyyy")
+            Else
+                Me.Controls("txtData_Inicio").Value = ""
+            End If
+            
+            If IsDate(dados(i, 6)) Then
+                Me.Controls("txtData_Fim").Value = Format(CDate(dados(i, 6)), "dd/mm/yyyy")
+            Else
+                Me.Controls("txtData_Fim").Value = ""
+            End If
+            
             Me.Controls("cboStatus").Value = CStr(dados(i, 8))
             Exit For
         End If
@@ -399,6 +410,8 @@ Private Sub CarregarEquipamentos()
     
     If tbl Is Nothing Then Exit Sub
     
+    If tbl.DataBodyRange Is Nothing Then Exit Sub
+    
     dados = tbl.Range.Value
     
     If IsError(dados) Then Exit Sub
@@ -436,8 +449,25 @@ Private Function ID_OPExiste(pID As String) As Boolean
     
     On Error GoTo ErroVerificar
     
+    Set ws = Nothing
+    On Error Resume Next
     Set ws = ThisWorkbook.Worksheets("BD_OPs")
+    On Error GoTo 0
+    
+    If ws Is Nothing Then
+        ID_OPExiste = False
+        Exit Function
+    End If
+    
+    Set tbl = Nothing
+    On Error Resume Next
     Set tbl = ws.ListObjects("TabelaOPs")
+    On Error GoTo 0
+    
+    If tbl Is Nothing Then
+        ID_OPExiste = False
+        Exit Function
+    End If
     
     dados = tbl.Range.Value
     
@@ -449,7 +479,7 @@ Private Function ID_OPExiste(pID As String) As Boolean
     totalLinhas = UBound(dados, 1)
     
     For i = 2 To totalLinhas
-        If Trim(CStr(dados(i, 1))) = Trim(pID) Then
+        If StrComp(Trim$(CStr(dados(i, 1))), Trim$(CStr(pID)), vbTextCompare) = 0 Then
             ID_OPExiste = True
             Exit Function
         End If
