@@ -428,13 +428,24 @@ Public Sub CarregarDetalhes(pID_OP As String)
     totalLinhas = UBound(dados, 1)
     
     For i = 2 To totalLinhas
-        If CStr(dados(i, 1)) = pID_OP Then
+        If StrComp(Trim$(CStr(dados(i, 1))), Trim$(CStr(pID_OP)), vbTextCompare) = 0 Then
             txtID_OP.Text = CStr(dados(i, 1))
             txtProduto.Text = CStr(dados(i, 2))
             txtEquipamento.Text = CStr(dados(i, 3))
             txtQuantidade.Text = CStr(dados(i, 4))
-            txtDataInicio.Text = Format(CDate(dados(i, 5)), "dd/mm/yyyy")
-            txtDataFim.Text = Format(CDate(dados(i, 6)), "dd/mm/yyyy")
+            
+            If IsDate(dados(i, 5)) Then
+                txtDataInicio.Text = Format(CDate(dados(i, 5)), "dd/mm/yyyy")
+            Else
+                txtDataInicio.Text = ""
+            End If
+            
+            If IsDate(dados(i, 6)) Then
+                txtDataFim.Text = Format(CDate(dados(i, 6)), "dd/mm/yyyy")
+            Else
+                txtDataFim.Text = ""
+            End If
+            
             txtDuracao.Text = Format(CDbl(dados(i, 7)), "0.0")
             cboStatus.Value = CStr(dados(i, 8))
             txtPrioridade.Text = ""

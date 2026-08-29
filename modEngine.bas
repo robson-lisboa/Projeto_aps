@@ -191,7 +191,7 @@ Public Sub AtualizarOP(pID As String, _
     Next i
     
     If linhaEncontrada = 0 Then
-        Err.Raise vbObjectError + 104, "AtualizarOP", "OP não encontrada para atualização."
+        Err.Raise vbObjectError + 106, "AtualizarOP", "OP não encontrada para atualização."
     End If
     
     With tbl.ListRows(linhaEncontrada - 1).Range
@@ -244,7 +244,7 @@ Public Sub ExcluirOP(pID As String)
     linhaEncontrada = 0
     
     For i = 2 To totalLinhas
-        If Trim(CStr(dados(i, 1))) = Trim(pID) Then
+        If StrComp(Trim$(CStr(dados(i, 1))), Trim$(CStr(pID)), vbTextCompare) = 0 Then
             linhaEncontrada = i
             Exit For
         End If
