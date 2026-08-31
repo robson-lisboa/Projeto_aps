@@ -151,11 +151,45 @@ Private Function ObterDadosParaCapacidade(pTabela As String, pDataInicio As Date
     On Error GoTo ErroObterDados
     
     If pTabela = "TabelaOPsSimulacao" Then
+        Set ws = Nothing
+        On Error Resume Next
         Set ws = ThisWorkbook.Worksheets("BD_OPsSimulacao")
+        On Error GoTo 0
+        
+        If ws Is Nothing Then
+            ObterDadosParaCapacidade = CVErr(xlErrRef)
+            Exit Function
+        End If
+        
+        Set tbl = Nothing
+        On Error Resume Next
         Set tbl = ws.ListObjects("TabelaOPsSimulacao")
+        On Error GoTo 0
+        
+        If tbl Is Nothing Then
+            ObterDadosParaCapacidade = CVErr(xlErrRef)
+            Exit Function
+        End If
     Else
+        Set ws = Nothing
+        On Error Resume Next
         Set ws = ThisWorkbook.Worksheets("BD_OPs")
+        On Error GoTo 0
+        
+        If ws Is Nothing Then
+            ObterDadosParaCapacidade = CVErr(xlErrRef)
+            Exit Function
+        End If
+        
+        Set tbl = Nothing
+        On Error Resume Next
         Set tbl = ws.ListObjects("TabelaOPs")
+        On Error GoTo 0
+        
+        If tbl Is Nothing Then
+            ObterDadosParaCapacidade = CVErr(xlErrRef)
+            Exit Function
+        End If
     End If
     
     dados = tbl.Range.Value
@@ -188,12 +222,10 @@ Private Function ObterDadosParaCapacidade(pTabela As String, pDataInicio As Date
         ObterDadosParaCapacidade = resultados
     End If
     
-Sair:
     Exit Function
     
 ErroObterDados:
     ObterDadosParaCapacidade = CVErr(xlErrRef)
-    Resume Sair
 End Function
 
 '--------------------------------------------------------------------------------
@@ -208,18 +240,33 @@ Private Function ObterDadosEquipamentos() As Variant
     
     On Error GoTo ErroObterEquipamentos
     
+    Set ws = Nothing
+    On Error Resume Next
     Set ws = ThisWorkbook.Worksheets("BD_Equipamentos")
+    On Error GoTo 0
+    
+    If ws Is Nothing Then
+        ObterDadosEquipamentos = CVErr(xlErrRef)
+        Exit Function
+    End If
+    
+    Set tbl = Nothing
+    On Error Resume Next
     Set tbl = ws.ListObjects("TabelaEquipamentos")
+    On Error GoTo 0
+    
+    If tbl Is Nothing Then
+        ObterDadosEquipamentos = CVErr(xlErrRef)
+        Exit Function
+    End If
     
     dados = tbl.Range.Value
     ObterDadosEquipamentos = dados
     
-Sair:
     Exit Function
     
 ErroObterEquipamentos:
     ObterDadosEquipamentos = CVErr(xlErrRef)
-    Resume Sair
 End Function
 
 '--------------------------------------------------------------------------------

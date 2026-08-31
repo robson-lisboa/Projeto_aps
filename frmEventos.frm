@@ -296,8 +296,25 @@ Private Function ID_EventoExiste(pID As String) As Boolean
     
     On Error GoTo ErroVerificar
     
+    Set ws = Nothing
+    On Error Resume Next
     Set ws = ThisWorkbook.Worksheets("BD_Eventos")
+    On Error GoTo 0
+    
+    If ws Is Nothing Then
+        ID_EventoExiste = False
+        Exit Function
+    End If
+    
+    Set tbl = Nothing
+    On Error Resume Next
     Set tbl = ws.ListObjects("TabelaEventos")
+    On Error GoTo 0
+    
+    If tbl Is Nothing Then
+        ID_EventoExiste = False
+        Exit Function
+    End If
     
     dados = tbl.Range.Value
     
@@ -309,7 +326,7 @@ Private Function ID_EventoExiste(pID As String) As Boolean
     totalLinhas = UBound(dados, 1)
     
     For i = 2 To totalLinhas
-        If Trim(CStr(dados(i, 1))) = Trim(pID) Then
+        If StrComp(Trim$(CStr(dados(i, 1))), Trim$(CStr(pID)), vbTextCompare) = 0 Then
             ID_EventoExiste = True
             Exit Function
         End If
